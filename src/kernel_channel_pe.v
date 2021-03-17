@@ -28,7 +28,7 @@ module kernel_channel_pe(
     i_weight,
     i_weight_val,
     i_psum,
-    i_psum_val,
+    // i_psum_val,
     o_psum,
     o_psum_val,
     err_psum_val
@@ -50,7 +50,7 @@ input  wire [(BIT_WIDTH * NUM_KERNEL ) - 1 : 0] i_weight;
 input  wire [(BIT_WIDTH * NUM_KERNEL ) - 1 : 0] i_psum;
 input  wire                                     i_data_val;
 input  wire                                     i_weight_val;
-input  wire                                     i_psum_val;
+// input  wire                                     i_psum_val;
 output wire [(BIT_WIDTH * NUM_KERNEL ) - 1 : 0] o_psum;
 output wire [NUM_KERNEL - 1 : 0]                o_psum_val;
 output reg  [REG_WIDTH - 1 : 0]                 err_psum_val;
@@ -83,26 +83,24 @@ assign i_psum_kn[3]   = i_psum[BIT_WIDTH * 4  - 1 : BIT_WIDTH * 3];
 
 // Generate PEs
 genvar idxC, idxK;
-generate;
-// PE for kernel idxC, channel 0
+generate
+    // PE for kernel idxC, channel 0
     for (idxK = 0; idxK < NUM_KERNEL; idxK = idxK + 1) begin
         pe i_pe_0(
             .clk            (clk),
             .rst            (rst),
-            .i_data         (i_data_ch[idxC]),
+            .i_data         (i_data_ch[0]),
             .i_data_val     (i_data_val),
             .i_weight       (i_weight_kn[idxK]),
             .i_weight_val   (i_weight_val),
             .i_psum         (i_psum_kn[idxK]),
-            .i_psum_val     (i_psum_val),
+            // .i_psum_val     (i_psum_val),
             .o_psum         (o_psum_kn[idxK][0]),
             .o_psum_val     (o_psum_val_kc[idxK][0])
             );
     end    
-// endgenerate
 
-// PE for kernel idxC, channel idxK
-// generate
+    // PE for kernel idxC, channel idxK
     for (idxK = 0; idxK < NUM_KERNEL; idxK = idxK + 1) begin
         for (idxC = 1; idxC < NUM_CHANNEL; idxC = idxC + 1) begin
             pe i_pe(
@@ -113,7 +111,7 @@ generate;
                 .i_weight       (i_weight_kn[idxK]),
                 .i_weight_val   (i_weight_val),
                 .i_psum         (o_psum_kn[idxK][idxC - 1]),
-                .i_psum_val     (i_psum_val),
+                // .i_psum_val     (i_psum_val),
                 .o_psum         (o_psum_kn[idxK][idxC]),
                 .o_psum_val     (o_psum_val_kc[idxK][idxC])
                 );

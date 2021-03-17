@@ -28,7 +28,7 @@ module pe (
     i_weight,
     i_weight_val,
     i_psum,
-    i_psum_val,
+    // i_psum_val,
     o_psum,
     o_psum_val
     );
@@ -43,13 +43,13 @@ input  wire [BIT_WIDTH - 1:0] i_weight;
 input  wire [BIT_WIDTH - 1:0] i_psum;
 input  wire                   i_data_val;
 input  wire                   i_weight_val;
-input  wire                   i_psum_val;
+// input  wire                   i_psum_val;
 output wire [BIT_WIDTH - 1:0] o_psum;
 output wire                   o_psum_val;
 
 reg  [BIT_WIDTH - 1:0] data_reg;
 reg  [BIT_WIDTH - 1:0] weight_reg;
-reg  [BIT_WIDTH - 1:0] psum_reg;
+// reg  [BIT_WIDTH - 1:0] psum_reg;
 
 wire [BIT_WIDTH - 1:0] mul_res;
 
@@ -60,12 +60,12 @@ always @(posedge clk) begin
     if (rst) begin
         data_reg    <= 0;
         weight_reg  <= 0;
-        psum_reg    <= 0;
+        // psum_reg    <= 0;
     end
     else begin
         if (i_data_val) data_reg <= i_data;
         if (i_weight_val) weight_reg <= i_weight;
-        if (i_psum_val) psum_reg <= i_psum;
+        // if (i_psum_val) psum_reg <= i_psum;
     end
 end
 
