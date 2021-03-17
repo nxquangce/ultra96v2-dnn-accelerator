@@ -1,0 +1,9 @@
+ultra96v2**
+xsim.dir/
+*.xpr
+*.pb
+*.jou
+*.log
+*.backup.jou
+*.backup.log
+*.upgrade_log
