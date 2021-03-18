@@ -115,21 +115,25 @@ always @(posedge clk) begin
 end
 
 // Read 3 data
+reg rd_data_val_reg;
 always @(posedge clk) begin
     if (rd_enb) begin
         rd_data_reg[0]  <= ff_mem[rd_addr];
         rd_data_reg[1]  <= ff_mem[rd_addr + 1'b1];
         rd_data_reg[2]  <= ff_mem[rd_addr + 'd2];
         rd_ptr          <= rd_ptr + 1'b1;
+        rd_data_val_reg <= 1'b1;
     end
     else begin
         rd_data_reg[0]  <= 0;
         rd_data_reg[1]  <= 0;
         rd_data_reg[2]  <= 0;
+        rd_data_val_reg <= 0;
     end
 end
 
 // Read data out
 assign rd_data = {rd_data_reg[2], rd_data_reg[1], rd_data_reg[0]};
+assign rd_data_val = rd_data_val_reg;
 
 endmodule
