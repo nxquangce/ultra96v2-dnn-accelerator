@@ -46,21 +46,33 @@ parameter REG_WIDTH     = 32;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
-input  wire                                     clk;
-input  wire                                     rst;
-input  wire [(BIT_WIDTH * NUM_CHANNEL) - 1 : 0] i_data;
-input  wire [(BIT_WIDTH * NUM_KERNEL ) - 1 : 0] i_weight;
-input  wire [(BIT_WIDTH * NUM_KERNEL ) - 1 : 0] i_psum;
-input  wire                                     i_data_val;
-input  wire                                     i_weight_val;
-input  wire                                     i_psum_val;
-output wire [(BIT_WIDTH * NUM_KERNEL ) - 1 : 0] o_psum;
-output wire [NUM_KERNEL - 1 : 0]                o_psum_val;
-output reg  [REG_WIDTH - 1 : 0]                 err_psum_val;
+input  wire                                                clk;
+input  wire                                                rst;
+input  wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KCPE) - 1 : 0] i_data;
+input  wire [(BIT_WIDTH * NUM_KERNEL  * NUM_KCPE) - 1 : 0] i_weight;
+input  wire [(BIT_WIDTH * NUM_KERNEL            ) - 1 : 0] i_psum;
+input  wire                                                i_data_val;
+input  wire                                                i_weight_val;
+input  wire                                                i_psum_val;
+output wire [(BIT_WIDTH * NUM_KERNEL            ) - 1 : 0] o_psum;
+output wire [NUM_KERNEL - 1 : 0]                           o_psum_val;
+output wire [REG_WIDTH * NUM_KCPE - 1 : 0]                 err_psum_val;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
-
+kernel_channel_pe kernel_channel_pe_0(
+    .clk            (clk),
+    .rst            (rst),
+    .i_data         (),
+    .i_data_val     (),
+    .i_weight       (),
+    .i_weight_val   (),
+    .i_psum         (),
+    // .i_psum_val     (),
+    .o_psum         (),
+    .o_psum_val     (),
+    .err_psum_val   ()
+    );
 
 //////////////////////////////////////////////////////////////////////////////////
 // Error monitor
