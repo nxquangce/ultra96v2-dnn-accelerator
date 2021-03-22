@@ -43,24 +43,24 @@ parameter REG_WIDTH     = 32;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
-input  wire                                     clk;
-input  wire                                     rst;
-input  wire [(BIT_WIDTH * NUM_CHANNEL) - 1 : 0] i_data;
-input  wire [(BIT_WIDTH * NUM_KERNEL ) - 1 : 0] i_weight;
-input  wire [(BIT_WIDTH * NUM_KERNEL ) - 1 : 0] i_psum;
-input  wire                                     i_data_val;
-input  wire                                     i_weight_val;
+input  wire                                                  clk;
+input  wire                                                  rst;
+input  wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
+input  wire [(BIT_WIDTH * NUM_KERNEL * NUM_CHANNEL) - 1 : 0] i_weight;
+input  wire [(BIT_WIDTH * NUM_KERNEL              ) - 1 : 0] i_psum;
+input  wire                                                  i_data_val;
+input  wire                                                  i_weight_val;
 // input  wire                                     i_psum_val;
-output wire [(BIT_WIDTH * NUM_KERNEL ) - 1 : 0] o_psum;
-output wire [NUM_KERNEL - 1 : 0]                o_psum_val;
-output reg  [REG_WIDTH - 1 : 0]                 err_psum_val;
+output wire [(BIT_WIDTH * NUM_KERNEL              ) - 1 : 0] o_psum;
+output wire [NUM_KERNEL - 1 : 0]                             o_psum_val;
+output reg  [REG_WIDTH - 1 : 0]                              err_psum_val;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
+wire [BIT_WIDTH - 1 : 0] i_weight_kn [NUM_KERNEL  - 1 : 0][NUM_CHANNEL - 1 : 0];
 wire [BIT_WIDTH - 1 : 0] i_data_ch   [NUM_CHANNEL - 1 : 0];
-wire [BIT_WIDTH - 1 : 0] i_weight_kn [NUM_KERNEL  - 1 : 0];
 wire [BIT_WIDTH - 1 : 0] i_psum_kn   [NUM_KERNEL  - 1 : 0];
-wire [BIT_WIDTH - 1 : 0] o_psum_kn   [NUM_KERNEL  - 1 : 0][NUM_CHANNEL - 1 : 0];
+wire [BIT_WIDTH - 1 : 0] o_psum_kn   [NUM_KERNEL  - 1 : 0];
 
 wire [NUM_CHANNEL - 1 : 0] o_psum_val_kc [NUM_KERNEL - 1 : 0];
 
@@ -69,11 +69,19 @@ assign i_data_ch[0]   = i_data[BIT_WIDTH     - 1 : 0];
 assign i_data_ch[1]   = i_data[BIT_WIDTH * 2 - 1 : BIT_WIDTH];
 assign i_data_ch[2]   = i_data[BIT_WIDTH * 3 - 1 : BIT_WIDTH * 2];
 
-// Split weight into kernels
-assign i_weight_kn[0] = i_weight[BIT_WIDTH      - 1 : 0];
-assign i_weight_kn[1] = i_weight[BIT_WIDTH * 2  - 1 : BIT_WIDTH];
-assign i_weight_kn[2] = i_weight[BIT_WIDTH * 3  - 1 : BIT_WIDTH * 2];
-assign i_weight_kn[3] = i_weight[BIT_WIDTH * 4  - 1 : BIT_WIDTH * 3];
+// Split weight into kernels and channel
+genvar idxIwC, idxIwK;
+generate
+    for (idxIwK = 0; idxIwK < NUM_KERNEL; idxIwK = idxIwK + 1) begin
+        for (idxIwC = 0; idxIwC < NUM_CHANNEL; idxIwC = idxIwC + 1) begin
+            assign i_weight_kn[idxIwK][idxIwC] = i_weight[BIT_WIDTH * (idxIwK * NUM_CHANNEL + idxIwC + 1) - 1 : BIT_WIDTH * (idxIwK * NUM_CHANNEL + idxIwC)];
+            // assign i_weight_kn[0] = i_weight[BIT_WIDTH      - 1 : 0];
+            // assign i_weight_kn[1] = i_weight[BIT_WIDTH * 2  - 1 : BIT_WIDTH];
+            // assign i_weight_kn[2] = i_weight[BIT_WIDTH * 3  - 1 : BIT_WIDTH * 2];
+            // assign i_weight_kn[3] = i_weight[BIT_WIDTH * 4  - 1 : BIT_WIDTH * 3];
+        end
+    end
+endgenerate
 
 // Split psum into kernels
 assign i_psum_kn[0]   = i_psum[BIT_WIDTH      - 1 : 0];
@@ -91,7 +99,7 @@ generate
             .rst            (rst),
             .i_data         (i_data_ch[0]),
             .i_data_val     (i_data_val),
-            .i_weight       (i_weight_kn[idxK]),
+            .i_weight       (i_weight_kn[idxK][0]),
             .i_weight_val   (i_weight_val),
             .i_psum         (i_psum_kn[idxK]),
             // .i_psum_val     (i_psum_val),
@@ -108,12 +116,12 @@ generate
                 .rst            (rst),
                 .i_data         (i_data_ch[idxC]),
                 .i_data_val     (i_data_val),
-                .i_weight       (i_weight_kn[idxK]),
+                .i_weight       (i_weight_kn[idxK][idxC]),
                 .i_weight_val   (i_weight_val),
                 .i_psum         (o_psum_kn[idxK][idxC - 1]),
                 // .i_psum_val     (i_psum_val),
-                .o_psum         (o_psum_kn[idxK][idxC]),
-                .o_psum_val     (o_psum_val_kc[idxK][idxC])
+                .o_psum         (o_psum_kn[idxK]),
+                .o_psum_val     (o_psum_val_kc[idxK])
                 );
         end
     end
