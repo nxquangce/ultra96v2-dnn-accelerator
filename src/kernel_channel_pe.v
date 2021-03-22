@@ -60,7 +60,7 @@ output reg  [REG_WIDTH - 1 : 0]                              err_psum_val;
 wire [BIT_WIDTH - 1 : 0] i_weight_kn [NUM_KERNEL  - 1 : 0][NUM_CHANNEL - 1 : 0];
 wire [BIT_WIDTH - 1 : 0] i_data_ch   [NUM_CHANNEL - 1 : 0];
 wire [BIT_WIDTH - 1 : 0] i_psum_kn   [NUM_KERNEL  - 1 : 0];
-wire [BIT_WIDTH - 1 : 0] o_psum_kn   [NUM_KERNEL  - 1 : 0];
+wire [BIT_WIDTH - 1 : 0] o_psum_kn   [NUM_KERNEL  - 1 : 0][NUM_CHANNEL - 1 : 0];
 
 wire [NUM_CHANNEL - 1 : 0] o_psum_val_kc [NUM_KERNEL - 1 : 0];
 
@@ -120,7 +120,7 @@ generate
                 .i_weight_val   (i_weight_val),
                 .i_psum         (o_psum_kn[idxK][idxC - 1]),
                 // .i_psum_val     (i_psum_val),
-                .o_psum         (o_psum_kn[idxK]),
+                .o_psum         (o_psum_kn[idxK][idxC]),
                 .o_psum_val     (o_psum_val_kc[idxK])
                 );
         end
