@@ -133,6 +133,9 @@ assign o_psum_val[1] = o_psum_val_kc[1][NUM_CHANNEL-1];
 assign o_psum_val[2] = o_psum_val_kc[2][NUM_CHANNEL-1];
 assign o_psum_val[3] = o_psum_val_kc[3][NUM_CHANNEL-1];
 
+// Output psum data
+assign o_psum = {o_psum_kn[3][2], o_psum_kn[2][2], o_psum_kn[1][2], o_psum_kn[0][2]};
+
 //////////////////////////////////////////////////////////////////////////////////
 // Error monitor
 wire [NUM_KERNEL - 1 : 0] err_psum_val_kn;
