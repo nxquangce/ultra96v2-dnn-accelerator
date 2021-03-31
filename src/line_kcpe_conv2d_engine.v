@@ -30,8 +30,8 @@ module line_kcpe_conv2d_engine(
     i_data_val,
     i_weight,
     i_weight_val,
-    i_psum,
-    i_psum_val,
+    // i_psum,
+    // i_psum_val,
     o_psum_kn0,
     o_psum_kn0_val,
     o_psum_kn1,
@@ -58,10 +58,10 @@ input  wire                                                  clk;
 input  wire                                                  rst;
 input  wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
 input  wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
-input  wire [(BIT_WIDTH * NUM_KERNEL              ) - 1 : 0] i_psum;
+// input  wire [(BIT_WIDTH * NUM_KERNEL              ) - 1 : 0] i_psum;
 input  wire                                                  i_data_val;
 input  wire                                                  i_weight_val;
-input  wire                                                  i_psum_val;
+// input  wire                                                  i_psum_val;
 // output wire [(BIT_WIDTH * NUM_KERNEL              ) - 1 : 0] o_psum;
 // output wire [NUM_KERNEL - 1 : 0]                             o_psum_val;
 output wire [BIT_WIDTH - 1 : 0]                              o_psum_kn0;
