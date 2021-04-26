@@ -44,7 +44,11 @@ pixel_concat uut(
     .ostall (ostall)
     );
 
-pixel_concat_tb_data_gen stimulus(
+pixel_concat_tb_data_gen 
+    #(
+        .MODE(1)
+    )
+stimulus(
     .clk     (clk),
     .rst     (rst),
     .idat    (idat),

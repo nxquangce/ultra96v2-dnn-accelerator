@@ -65,19 +65,19 @@ end
 
 always @(posedge clk) begin
     if (rst) begin
-        state <= 2'b11;
+        state <= 2'b00;
     end
-    else if (ival | ostall) begin
+    else if (oval) begin
         state <= state + 1'b1;
     end
 end
 
-assign ostall = (state == 2'b10);
+assign ostall = (state == 2'b10) & ival;
 
 // Cal out data
 assign dat_concat = {idat, cache_reg_p1};
 
-always @(state) begin
+always @(*) begin
     case (state)
         2'b00: odata_reg_p0 = dat_concat[8 * 7 - 1 : 8 * 4];
         2'b01: odata_reg_p0 = dat_concat[8 * 6 - 1 : 8 * 3];
