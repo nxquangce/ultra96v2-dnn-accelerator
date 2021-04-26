@@ -77,8 +77,10 @@ wire [NUM_KERNEL - 1 : 0]               accum_i_psum_val;
 line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .clk             (clk),
     .rst             (rst),
+    .o_data_req      (),
     .i_data          (i_data),
     .i_data_val      (i_data_val),
+    .o_weight_req    (),
     .i_weight        (i_weight),
     .i_weight_val    (i_weight_val),
     // .i_psum          (engine_i_psum),

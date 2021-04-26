@@ -26,8 +26,10 @@
 module line_kcpe_conv2d_engine(
     clk,
     rst,
+    o_data_req,
     i_data,
     i_data_val,
+    o_weight_req,
     i_weight,
     i_weight_val,
     // i_psum,
@@ -56,7 +58,9 @@ parameter NUM_RDATA     = 3;
 // Port declarations
 input  wire                                                  clk;
 input  wire                                                  rst;
+output wire                                                  o_data_req;
 input  wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
+output wire                                                  o_weight_req;
 input  wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
 // input  wire [(BIT_WIDTH * NUM_KERNEL              ) - 1 : 0] i_psum;
 input  wire                                                  i_data_val;
@@ -133,7 +137,7 @@ input_buffer input_buffer_0(
     .i_data_ch1_val   (i_data_val),
     .i_data_ch2       (i_data_ch2),
     .i_data_ch2_val   (i_data_val),
-    .o_data_req       (),
+    .o_data_req       (o_data_req),
     .o_data_ch0       (buffer_o_data_ch0),
     .o_data_ch0_val   (buffer_o_data_ch0_val),
     .o_data_ch1       (buffer_o_data_ch1),
@@ -179,7 +183,7 @@ weight_buffer weight_buffer_0(
     .i_data_kn2_val     (i_weight_val),
     .i_data_kn3         (i_weight_kn3),
     .i_data_kn3_val     (i_weight_val),
-    .o_data_req         (),
+    .o_data_req         (o_weight_req),
     .o_data_3ch_kn0     (buffer_o_weight_3ch3pos_kn0),
     .o_data_3ch_kn0_val (buffer_o_weight_3ch3pos_kn0_val),
     .o_data_3ch_kn1     (buffer_o_weight_3ch3pos_kn1),
