@@ -107,6 +107,7 @@ always @(posedge clk) begin
         ff_mem[5] <= 0;
         ff_mem[6] <= 0;
         ff_mem[7] <= 0;
+        wr_ptr    <= 0;
     end
     else if (wr_enb) begin
         ff_mem[wr_addr] <= wr_data;
@@ -117,7 +118,14 @@ end
 // Read 3 data
 reg rd_data_val_reg;
 always @(posedge clk) begin
-    if (rd_enb) begin
+    if (rst) begin
+        rd_data_reg[0]  <= 0;
+        rd_data_reg[1]  <= 0;
+        rd_data_reg[2]  <= 0;
+        rd_ptr          <= 0;
+        rd_data_val_reg <= 0;
+    end
+    else if (rd_enb) begin
         rd_data_reg[0]  <= ff_mem[rd_addr];
         rd_data_reg[1]  <= ff_mem[rd_addr + 1'b1];
         rd_data_reg[2]  <= ff_mem[rd_addr + 'd2];

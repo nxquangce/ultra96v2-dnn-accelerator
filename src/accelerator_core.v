@@ -23,6 +23,7 @@
 module accelerator_core(
     clk,
     rst,
+    o_data_req,
     i_data,
     i_data_val,
     i_weight,
@@ -52,6 +53,7 @@ parameter NUM_RDATA     = 3;
 // Port declarations
 input  wire                                                  clk;
 input  wire                                                  rst;
+output wire                                                  o_data_req;
 input  wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
 input  wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
 input  wire                                                  i_data_val;
@@ -79,6 +81,7 @@ wire [NUM_KERNEL - 1 : 0]               accum_i_psum_val;
 line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .clk             (clk),
     .rst             (rst),
+    .o_data_req      (o_data_req),
     .i_data          (i_data),
     .i_data_val      (i_data_val),
     .i_weight        (i_weight),

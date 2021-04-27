@@ -314,13 +314,11 @@ reg  data_req_reg;
 assign enb = i_conf_ctrl[0];
 
 always @(posedge clk) begin
-    if (enb) begin
-        if (rst) begin
-            data_req_reg <= 0;
-        end
-        else begin
-            data_req_reg <= ~buffer_o_data_full;
-        end
+    if (rst) begin
+        data_req_reg <= 0;
+    end
+    else if (enb) begin
+        data_req_reg <= ~buffer_o_data_full;
     end
 end
 
