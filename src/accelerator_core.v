@@ -34,7 +34,8 @@ module accelerator_core(
     o_psum_kn2,
     o_psum_kn2_val,
     o_psum_kn3,
-    o_psum_kn3_val
+    o_psum_kn3_val,
+    i_conf_ctrl
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -63,6 +64,7 @@ output wire                                                  o_psum_kn0_val;
 output wire                                                  o_psum_kn1_val;
 output wire                                                  o_psum_kn2_val;
 output wire                                                  o_psum_kn3_val;
+input  wire [REG_WIDTH - 1 : 0]                              i_conf_ctrl;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -77,10 +79,8 @@ wire [NUM_KERNEL - 1 : 0]               accum_i_psum_val;
 line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .clk             (clk),
     .rst             (rst),
-    .o_data_req      (),
     .i_data          (i_data),
     .i_data_val      (i_data_val),
-    .o_weight_req    (),
     .i_weight        (i_weight),
     .i_weight_val    (i_weight_val),
     // .i_psum          (engine_i_psum),
@@ -92,7 +92,8 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .o_psum_kn2      (accum_i_psum[2]),
     .o_psum_kn2_val  (accum_i_psum_val[2]),
     .o_psum_kn3      (accum_i_psum[3]),
-    .o_psum_kn3_val  (accum_i_psum_val[3])
+    .o_psum_kn3_val  (accum_i_psum_val[3]),
+    .i_conf_ctrl     (i_conf_ctrl)
     );
 
 psum_accumulator psum_accumulator_0(
@@ -117,5 +118,9 @@ psum_accumulator psum_accumulator_0(
     .o_psum_kn3      (o_psum_kn3),
     .o_psum_kn3_val  (o_psum_kn3_val)
     );
+
+
+// Control logic
+
 
 endmodule

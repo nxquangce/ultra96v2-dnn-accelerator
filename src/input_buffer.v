@@ -30,7 +30,7 @@ module input_buffer(
     i_data_ch1_val,
     i_data_ch2,
     i_data_ch2_val,
-    o_data_req,
+    i_data_req,
     o_data_ch0,
     o_data_ch0_val,
     o_data_ch1,
@@ -39,7 +39,9 @@ module input_buffer(
     o_data_ch2_val,
     data_counter_ch0,
     data_counter_ch1,
-    data_counter_ch2
+    data_counter_ch2,
+    o_empty,
+    o_full
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -60,7 +62,7 @@ input  wire [DAT_WIDTH - 1 : 0]             i_data_ch1;
 input  wire                                 i_data_ch1_val;
 input  wire [DAT_WIDTH - 1 : 0]             i_data_ch2;
 input  wire                                 i_data_ch2_val;
-input  wire                                 o_data_req;
+input  wire                                 i_data_req;
 output wire [DAT_WIDTH * NUM_RDATA - 1 : 0] o_data_ch0;
 output wire                                 o_data_ch0_val;
 output wire [DAT_WIDTH * NUM_RDATA - 1 : 0] o_data_ch1;
@@ -70,9 +72,13 @@ output wire                                 o_data_ch2_val;
 output wire [FF_ADDR_WIDTH - 1 : 0]         data_counter_ch0;
 output wire [FF_ADDR_WIDTH - 1 : 0]         data_counter_ch1;
 output wire [FF_ADDR_WIDTH - 1 : 0]         data_counter_ch2;
+output wire                                 o_empty;
+output wire                                 o_full;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
+wire [NUM_CHANNEL - 1 : 0] full;
+wire [NUM_CHANNEL - 1 : 0] empty;
 
 // Channel 0
 fifo_p1o3
@@ -88,12 +94,12 @@ fifo_ch0
     .rst          (rst),
     .wr_req       (i_data_ch0_val),
     .wr_data      (i_data_ch0),
-    .rd_req       (o_data_req),
+    .rd_req       (i_data_req),
     .rd_data      (o_data_ch0),
     .rd_data_val  (o_data_ch0_val),
     .data_counter (data_counter_ch0),
-    .full         (),
-    .empty        ()
+    .full         (full[0]),
+    .empty        (empty[0])
     );
 
 // Channel 1
@@ -110,12 +116,12 @@ fifo_ch1
     .rst          (rst),
     .wr_req       (i_data_ch1_val),
     .wr_data      (i_data_ch1),
-    .rd_req       (o_data_req),
+    .rd_req       (i_data_req),
     .rd_data      (o_data_ch1),
     .rd_data_val  (o_data_ch1_val),
     .data_counter (data_counter_ch1),
-    .full         (),
-    .empty        ()
+    .full         (full[1]),
+    .empty        (empty[1])
     );
 
 // Channel 2
@@ -132,12 +138,15 @@ fifo_ch2
     .rst          (rst),
     .wr_req       (i_data_ch2_val),
     .wr_data      (i_data_ch2),
-    .rd_req       (o_data_req),
+    .rd_req       (i_data_req),
     .rd_data      (o_data_ch2),
     .rd_data_val  (o_data_ch2_val),
     .data_counter (data_counter_ch2),
-    .full         (),
-    .empty        ()
+    .full         (full[2]),
+    .empty        (empty[2])
     );
+
+assign o_full = |full;
+assign o_empty = &o_empty;
 
 endmodule

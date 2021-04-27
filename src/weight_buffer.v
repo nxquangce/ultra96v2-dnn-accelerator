@@ -31,7 +31,7 @@ module weight_buffer(
     i_data_kn2_val,
     i_data_kn3,
     i_data_kn3_val,
-    o_data_req,
+    i_data_req,
     o_data_3ch_kn0,
     o_data_3ch_kn0_val,
     o_data_3ch_kn1,
@@ -62,7 +62,7 @@ input  wire [DAT_WIDTH * NUM_CHANNEL - 1 : 0]             i_data_kn2;
 input  wire                                               i_data_kn2_val;
 input  wire [DAT_WIDTH * NUM_CHANNEL - 1 : 0]             i_data_kn3;
 input  wire                                               i_data_kn3_val;
-input  wire                                               o_data_req;
+input  wire                                               i_data_req;
 output wire [DAT_WIDTH * NUM_CHANNEL * NUM_RDATA - 1 : 0] o_data_3ch_kn0;
 output wire                                               o_data_3ch_kn0_val;
 output wire [DAT_WIDTH * NUM_CHANNEL * NUM_RDATA - 1 : 0] o_data_3ch_kn1;
@@ -130,7 +130,7 @@ end
 
 // Cache valid register
 always @(posedge clk) begin
-    if (rst | o_data_req) begin
+    if (rst | i_data_req) begin
         weight_val_reg[0] <= 0;
         weight_val_reg[1] <= 0;
         weight_val_reg[2] <= 0;
@@ -161,10 +161,10 @@ always @(posedge clk) begin
 end
 
 // Output data valid
-assign o_data_3ch_kn0_val = &weight_val_reg[0] & o_data_req;
-assign o_data_3ch_kn1_val = &weight_val_reg[1] & o_data_req;
-assign o_data_3ch_kn2_val = &weight_val_reg[2] & o_data_req;
-assign o_data_3ch_kn3_val = &weight_val_reg[3] & o_data_req;
+assign o_data_3ch_kn0_val = &weight_val_reg[0] & i_data_req;
+assign o_data_3ch_kn1_val = &weight_val_reg[1] & i_data_req;
+assign o_data_3ch_kn2_val = &weight_val_reg[2] & i_data_req;
+assign o_data_3ch_kn3_val = &weight_val_reg[3] & i_data_req;
 
 // Output data
 assign o_data_3ch_kn0 = {weight_kn0_reg[0], weight_kn0_reg[1], weight_kn0_reg[2]}; //, weight_kn0_reg[3]};
