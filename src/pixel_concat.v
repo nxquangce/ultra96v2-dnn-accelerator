@@ -82,7 +82,7 @@ always @(*) begin
         2'b00: odata_reg_p0 = dat_concat[8 * 7 - 1 : 8 * 4];
         2'b01: odata_reg_p0 = dat_concat[8 * 6 - 1 : 8 * 3];
         2'b10: odata_reg_p0 = dat_concat[8 * 5 - 1 : 8 * 2];
-        2'b11: odata_reg_p0 = dat_concat[8 * 7 - 1 : 8 * 5];    // due to stall
+        2'b11: odata_reg_p0 = dat_concat[8 * 8 - 1 : 8 * 5];    // due to stall
         default: begin
             odata_reg_p0 = 0;
         end

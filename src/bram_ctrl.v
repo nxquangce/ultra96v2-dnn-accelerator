@@ -63,14 +63,21 @@ output [NUM_BYTE - 1 : 0]   mem_wen;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
-reg odat_val_reg;
+reg [DAT_WIDTH - 1 : 0] odat_reg; 
+reg                     odat_val_reg;
 
 assign mem_enb = 1'b1;
 assign mem_rst = 1'b0;
 assign mem_addr = addr;
 assign mem_wen = {4{wren}};
 assign oval = odat_val_reg;
-assign odat = mem_odat;
+assign odat = (oval) ? mem_odat : odat_reg;
+
+always @(posedge clk) begin
+    if (oval) begin
+        odat_reg <= mem_odat;
+    end
+end
 
 always @(posedge clk) begin
     odat_val_reg <= rden;
