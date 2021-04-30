@@ -41,7 +41,8 @@ module line_kcpe_conv2d_engine(
     o_psum_kn2_val,
     o_psum_kn3,
     o_psum_kn3_val,
-    i_conf_ctrl
+    i_conf_ctrl,
+    i_conf_weightinterval
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -78,6 +79,7 @@ output wire                                                  o_psum_kn3_val;
 // output wire [REG_WIDTH * NUM_KCPE - 1 : 0]      err_psum_val;
 
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_ctrl;
+input  wire [REG_WIDTH - 1 : 0]                              i_conf_weightinterval;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -307,12 +309,14 @@ result_router result_router_0(
     .o_psum_kn3_val     (o_psum_kn3_val)
     );    
 
-// Control logic
+//// Control logic
 wire enb;
 reg  init;
 reg  data_req_reg;
+reg  weight_req_reg;
 assign enb = i_conf_ctrl[0];
 
+// Data control
 always @(posedge clk) begin
     if (rst) begin
         data_req_reg <= 0;
@@ -334,6 +338,33 @@ always @(posedge clk) begin
 end
 
 assign i_data_req = (init & buffer_o_data_full) | engine_o_psum_kcpe0_val;
+
+// Weight control
+reg [REG_WIDTH - 1 : 0] psum_per_weight_cnt;
+wire                    weight_req;
+
+always @(posedge clk) begin
+    if (rst) begin
+        psum_per_weight_cnt <= 0;
+    end
+    else if (engine_o_psum_kcpe0_val) begin
+        psum_per_weight_cnt <= (weight_req) ? 0 : psum_per_weight_cnt + 1'b1;
+    end
+end
+
+assign weight_req = (psum_per_weight_cnt == i_conf_weightinterval);
+
+always @(posedge clk) begin
+    if (rst) begin
+        weight_req_reg <= 0;
+    end
+    else if (enb) begin
+        weight_req_reg <= weight_req;
+    end    
+end
+
+assign i_weight_req = (init & buffer_o_data_full) | weight_req_reg;
+
 
 //////////////////////////////////////////////////////////////////////////////////
 // Error monitor

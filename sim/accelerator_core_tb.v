@@ -46,6 +46,9 @@ wire                                                  o_psum_kn1_val;
 wire                                                  o_psum_kn2_val;
 wire                                                  o_psum_kn3_val;
 reg [REG_WIDTH - 1 : 0]                               i_conf_ctrl;
+reg [REG_WIDTH - 1 : 0]                               i_conf_cnt;
+reg [REG_WIDTH - 1 : 0]                               i_conf_knx;
+reg [REG_WIDTH - 1 : 0]                               i_conf_weightinterval;
 
 accelerator_core uut(
     .clk            (clk),
@@ -63,7 +66,10 @@ accelerator_core uut(
     .o_psum_kn2_val (o_psum_kn2_val),
     .o_psum_kn3     (o_psum_kn3),
     .o_psum_kn3_val (o_psum_kn3_val),
-    .i_conf_ctrl    (i_conf_ctrl)
+    .i_conf_ctrl    (i_conf_ctrl),
+    .i_conf_cnt     (i_conf_cnt),
+    .i_conf_knx     (i_conf_knx),
+    .i_conf_weightinterval(i_conf_weightinterval)
     );
 
 accelerator_core_tb_data_gen stimulus(
@@ -90,7 +96,14 @@ end
 
 initial begin
     i_conf_ctrl <= 0;
-    #50 i_conf_ctrl <= 32'b1;
+    i_conf_cnt <= 0;
+    i_conf_knx <= 0;
+    i_conf_weightinterval <= 0;
+    #50 
+    i_conf_ctrl <= 32'b1;
+    i_conf_cnt <= 32'd50176;
+    i_conf_knx <= 32'hffffffff;
+    i_conf_weightinterval <= 32'd50176;
 end
 
 endmodule

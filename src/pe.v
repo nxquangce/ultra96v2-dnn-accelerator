@@ -91,7 +91,7 @@ always @(posedge clk) begin
         o_psum_val_reg[0] <= i_data_val;
         o_psum_val_reg[1] <= o_psum_val_reg[0];
         o_psum_val_reg[2] <= o_psum_val_reg[1];
-        o_psum_val_reg[3] <= o_psum_val_reg[3];
+        o_psum_val_reg[3] <= o_psum_val_reg[2];
     end
 end
 
