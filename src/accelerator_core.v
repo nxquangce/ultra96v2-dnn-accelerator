@@ -26,6 +26,7 @@ module accelerator_core(
     o_data_req,
     i_data,
     i_data_val,
+    o_weight_req,
     i_weight,
     i_weight_val,
     o_psum_kn0,
@@ -39,7 +40,8 @@ module accelerator_core(
     i_conf_ctrl,
     i_conf_cnt,
     i_conf_knx,
-    i_conf_weightinterval
+    i_conf_weightinterval,
+    i_conf_kernelsize
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -57,6 +59,7 @@ parameter NUM_RDATA     = 3;
 input  wire                                                  clk;
 input  wire                                                  rst;
 output wire                                                  o_data_req;
+output wire                                                  o_weight_req;
 input  wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
 input  wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
 input  wire                                                  i_data_val;
@@ -73,6 +76,7 @@ input  wire [REG_WIDTH - 1 : 0]                              i_conf_ctrl;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_cnt;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_knx;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_weightinterval;
+input  wire [REG_WIDTH - 1 : 0]                              i_conf_kernelsize;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -85,25 +89,27 @@ wire [NUM_KERNEL - 1 : 0]               accum_i_psum_val;
 // wire                                    engine_i_psum_val;
 
 line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
-    .clk             (clk),
-    .rst             (rst),
-    .o_data_req      (o_data_req),
-    .i_data          (i_data),
-    .i_data_val      (i_data_val),
-    .i_weight        (i_weight),
-    .i_weight_val    (i_weight_val),
-    // .i_psum          (engine_i_psum),
-    // .i_psum_val      (engine_i_psum_val),
-    .o_psum_kn0      (accum_i_psum[0]),
-    .o_psum_kn0_val  (accum_i_psum_val[0]),
-    .o_psum_kn1      (accum_i_psum[1]),
-    .o_psum_kn1_val  (accum_i_psum_val[1]),
-    .o_psum_kn2      (accum_i_psum[2]),
-    .o_psum_kn2_val  (accum_i_psum_val[2]),
-    .o_psum_kn3      (accum_i_psum[3]),
-    .o_psum_kn3_val  (accum_i_psum_val[3]),
-    .i_conf_ctrl     (i_conf_ctrl),
-    .i_conf_weightinterval (i_conf_weightinterval)
+    .clk                    (clk),
+    .rst                    (rst),
+    .o_data_req             (o_data_req),
+    .i_data                 (i_data),
+    .i_data_val             (i_data_val),
+    .o_weight_req           (o_weight_req),
+    .i_weight               (i_weight),
+    .i_weight_val           (i_weight_val),
+    // .i_psum                 (engine_i_psum),
+    // .i_psum_val             (engine_i_psum_val),
+    .o_psum_kn0             (accum_i_psum[0]),
+    .o_psum_kn0_val         (accum_i_psum_val[0]),
+    .o_psum_kn1             (accum_i_psum[1]),
+    .o_psum_kn1_val         (accum_i_psum_val[1]),
+    .o_psum_kn2             (accum_i_psum[2]),
+    .o_psum_kn2_val         (accum_i_psum_val[2]),
+    .o_psum_kn3             (accum_i_psum[3]),
+    .o_psum_kn3_val         (accum_i_psum_val[3]),
+    .i_conf_ctrl            (i_conf_ctrl),
+    .i_conf_weightinterval  (i_conf_weightinterval),
+    .i_conf_kernelsize      (i_conf_kernelsize)
     );
 
 psum_accumulator psum_accumulator_0(

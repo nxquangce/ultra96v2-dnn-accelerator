@@ -26,6 +26,7 @@ module accelerator_core_tb_data_gen(
     o_data_req,
     i_data,
     i_data_val,
+    o_weight_req,
     i_weight,
     i_weight_val
     );
@@ -45,6 +46,7 @@ parameter NUM_RDATA     = 3;
 input  wire                                                  clk;
 input  wire                                                  rst;
 input  wire                                                  o_data_req;
+input  wire                                                  o_weight_req;
 output wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
 output wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
 output wire                                                  i_data_val;
@@ -78,7 +80,7 @@ always @(posedge clk) begin
         i_weight_reg <= 0;
         i_weight_val_reg <= 0;
     end
-    else if (o_data_req) begin
+    else if (o_weight_req) begin
         i_weight_reg <= i_weight_reg + 1'b1;
         i_weight_val_reg <= 1;
     end

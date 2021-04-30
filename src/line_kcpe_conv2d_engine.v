@@ -29,6 +29,7 @@ module line_kcpe_conv2d_engine(
     o_data_req,
     i_data,
     i_data_val,
+    o_weight_req,
     i_weight,
     i_weight_val,
     // i_psum,
@@ -42,7 +43,8 @@ module line_kcpe_conv2d_engine(
     o_psum_kn3,
     o_psum_kn3_val,
     i_conf_ctrl,
-    i_conf_weightinterval
+    i_conf_weightinterval,
+    i_conf_kernelsize
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,13 +55,17 @@ parameter NUM_KERNEL    = 4;
 parameter NUM_KCPE      = 3;    // Number of kernel-channel PE
 parameter REG_WIDTH     = 32;
 
-parameter NUM_RDATA     = 3;
+parameter NUM_RDATA     = NUM_KCPE;
+
+parameter KERNEL_SIZE_WIDTH = 3;
+parameter NUM_KCPE_WIDTH = 2;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
 input  wire                                                  clk;
 input  wire                                                  rst;
 output wire                                                  o_data_req;
+output wire                                                  o_weight_req;
 input  wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
 input  wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
 // input  wire [(BIT_WIDTH * NUM_KERNEL              ) - 1 : 0] i_psum;
@@ -80,7 +86,7 @@ output wire                                                  o_psum_kn3_val;
 
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_ctrl;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_weightinterval;
-
+input  wire [REG_WIDTH - 1 : 0]                              i_conf_kernelsize;
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
 // Input signals
@@ -364,6 +370,34 @@ always @(posedge clk) begin
 end
 
 assign i_weight_req = (init & buffer_o_data_full) | weight_req_reg;
+
+reg o_weight_req_reg;
+reg [NUM_KCPE_WIDTH - 1 : 0] o_weight_req_cnt;
+reg [KERNEL_SIZE_WIDTH - 1 : 0] weight_req_cnt;
+wire weight_req_cnt_max_vld;
+
+assign weight_req_cnt_max_vld = (weight_req_cnt == i_conf_kernelsize[KERNEL_SIZE_WIDTH - 1 : 0]);
+always @(posedge clk) begin
+    if (rst) begin
+        weight_req_cnt <= 0;
+    end
+    else if (i_weight_req) begin
+        weight_req_cnt <= (weight_req_cnt_max_vld) ? 0 : weight_req_cnt + 1'b1;
+    end
+end
+
+always @(posedge clk) begin
+    if (rst | (o_weight_req_cnt == NUM_KCPE)) begin
+        o_weight_req_cnt <= 0;
+        o_weight_req_reg <= 0;
+    end
+    else if (weight_req_cnt_max_vld) begin
+        o_weight_req_reg <= 1'b1;
+        o_weight_req_cnt <= o_weight_req_cnt + 1'b1;
+    end 
+end
+
+assign o_weight_req = o_weight_req_reg;
 
 
 //////////////////////////////////////////////////////////////////////////////////

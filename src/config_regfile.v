@@ -37,6 +37,7 @@ module config_regfile #
     output [C_S_AXI_DATA_WIDTH - 1 : 0] reg1,
     output [C_S_AXI_DATA_WIDTH - 1 : 0] reg2,
     output [C_S_AXI_DATA_WIDTH - 1 : 0] reg3,
+    output [C_S_AXI_DATA_WIDTH - 1 : 0] reg4,
 
     // User ports ends
     // Do not modify the ports beyond this line
@@ -130,6 +131,7 @@ reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg0;
 reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg1;
 reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg2;
 reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg3;
+reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg4;
 wire	 slv_reg_rden;
 wire	 slv_reg_wren;
 reg [C_S_AXI_DATA_WIDTH-1:0]	 reg_data_out;
@@ -246,6 +248,7 @@ begin
         slv_reg1 <= 0;
         slv_reg2 <= 0;
         slv_reg3 <= 0;
+        slv_reg4 <= 0;
     end 
     else begin
     if (slv_reg_wren)
@@ -278,12 +281,20 @@ begin
                 // Respective byte enables are asserted as per write strobes 
                 // Slave register 3
                 slv_reg3[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-                end  
+                end
+            2'h4:
+            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+                if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+                // Respective byte enables are asserted as per write strobes 
+                // Slave register 3
+                slv_reg4[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+                end
             default : begin
                         slv_reg0 <= slv_reg0;
                         slv_reg1 <= slv_reg1;
                         slv_reg2 <= slv_reg2;
                         slv_reg3 <= slv_reg3;
+                        slv_reg4 <= slv_reg4;
                     end
         endcase
         end
@@ -396,6 +407,7 @@ begin
         2'h1   : reg_data_out <= slv_reg1;
         2'h2   : reg_data_out <= slv_reg2;
         2'h3   : reg_data_out <= slv_reg3;
+        2'h4   : reg_data_out <= slv_reg4;
         default : reg_data_out <= 0;
         endcase
 end
@@ -424,6 +436,7 @@ assign reg0 = slv_reg0;
 assign reg1 = slv_reg1;
 assign reg2 = slv_reg2;
 assign reg3 = slv_reg3;
+assign reg4 = slv_reg4;
 
 // User logic ends
 

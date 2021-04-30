@@ -33,6 +33,7 @@ parameter NUM_RDATA     = 3;
 reg clk;
 reg rst;
 wire                                                  o_data_req;
+wire                                                  o_weight_req;
 wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
 wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
 wire                                                  i_data_val;
@@ -49,27 +50,29 @@ reg [REG_WIDTH - 1 : 0]                               i_conf_ctrl;
 reg [REG_WIDTH - 1 : 0]                               i_conf_cnt;
 reg [REG_WIDTH - 1 : 0]                               i_conf_knx;
 reg [REG_WIDTH - 1 : 0]                               i_conf_weightinterval;
-
+reg [REG_WIDTH - 1 : 0]                               i_conf_kernelsize;
 accelerator_core uut(
-    .clk            (clk),
-    .rst            (rst),
-    .o_data_req     (o_data_req),
-    .i_data         (i_data),
-    .i_data_val     (i_data_val),
-    .i_weight       (i_weight),
-    .i_weight_val   (i_weight_val),
-    .o_psum_kn0     (o_psum_kn0),
-    .o_psum_kn0_val (o_psum_kn0_val),
-    .o_psum_kn1     (o_psum_kn1),
-    .o_psum_kn1_val (o_psum_kn1_val),
-    .o_psum_kn2     (o_psum_kn2),
-    .o_psum_kn2_val (o_psum_kn2_val),
-    .o_psum_kn3     (o_psum_kn3),
-    .o_psum_kn3_val (o_psum_kn3_val),
-    .i_conf_ctrl    (i_conf_ctrl),
-    .i_conf_cnt     (i_conf_cnt),
-    .i_conf_knx     (i_conf_knx),
-    .i_conf_weightinterval(i_conf_weightinterval)
+    .clk                    (clk),
+    .rst                    (rst),
+    .o_data_req             (o_data_req),
+    .i_data                 (i_data),
+    .i_data_val             (i_data_val),
+    .o_weight_req           (o_weight_req),
+    .i_weight               (i_weight),
+    .i_weight_val           (i_weight_val),
+    .o_psum_kn0             (o_psum_kn0),
+    .o_psum_kn0_val         (o_psum_kn0_val),
+    .o_psum_kn1             (o_psum_kn1),
+    .o_psum_kn1_val         (o_psum_kn1_val),
+    .o_psum_kn2             (o_psum_kn2),
+    .o_psum_kn2_val         (o_psum_kn2_val),
+    .o_psum_kn3             (o_psum_kn3),
+    .o_psum_kn3_val         (o_psum_kn3_val),
+    .i_conf_ctrl            (i_conf_ctrl),
+    .i_conf_cnt             (i_conf_cnt),
+    .i_conf_knx             (i_conf_knx),
+    .i_conf_weightinterval  (i_conf_weightinterval),
+    .i_conf_kernelsize      (i_conf_kernelsize)
     );
 
 accelerator_core_tb_data_gen stimulus(
@@ -78,6 +81,7 @@ accelerator_core_tb_data_gen stimulus(
     .o_data_req     (o_data_req),
     .i_data         (i_data),
     .i_data_val     (i_data_val),
+    .o_weight_req   (o_weight_req),
     .i_weight       (i_weight),
     .i_weight_val   (i_weight_val)
     );
@@ -94,16 +98,19 @@ initial begin
     #20 rst <= 0;
 end
 
+localparam WEIGHT_INTERVAL = 50176 - 2 * 222;
 initial begin
     i_conf_ctrl <= 0;
     i_conf_cnt <= 0;
     i_conf_knx <= 0;
     i_conf_weightinterval <= 0;
+    i_conf_kernelsize <= 0;
     #50 
     i_conf_ctrl <= 32'b1;
     i_conf_cnt <= 32'd50176;
     i_conf_knx <= 32'hffffffff;
-    i_conf_weightinterval <= 32'd50176;
+    i_conf_weightinterval <= WEIGHT_INTERVAL;
+    i_conf_kernelsize <= 32'd3;
 end
 
 endmodule
