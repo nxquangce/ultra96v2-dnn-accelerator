@@ -22,6 +22,7 @@
 
 module bram_ctrl(
     clk,
+    rst,
     addr,
     wren,
     idat,
@@ -47,6 +48,7 @@ localparam NUM_BYTE     = 4;
 // Port declarations
 // User side
 input                      clk;
+input                      rst;
 input [ADDR_WIDTH - 1 : 0] addr;
 input                      wren;
 input [DAT_WIDTH - 1 : 0]  idat;
@@ -74,6 +76,9 @@ assign oval = odat_val_reg;
 assign odat = (oval) ? mem_odat : odat_reg;
 
 always @(posedge clk) begin
+    if (rst) begin
+        odat_reg <= 0;
+    end
     if (oval) begin
         odat_reg <= mem_odat;
     end

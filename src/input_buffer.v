@@ -69,9 +69,9 @@ output wire [DAT_WIDTH * NUM_RDATA - 1 : 0] o_data_ch1;
 output wire                                 o_data_ch1_val;
 output wire [DAT_WIDTH * NUM_RDATA - 1 : 0] o_data_ch2;
 output wire                                 o_data_ch2_val;
-output wire [FF_ADDR_WIDTH - 1 : 0]         data_counter_ch0;
-output wire [FF_ADDR_WIDTH - 1 : 0]         data_counter_ch1;
-output wire [FF_ADDR_WIDTH - 1 : 0]         data_counter_ch2;
+output wire [FF_ADDR_WIDTH : 0]             data_counter_ch0;
+output wire [FF_ADDR_WIDTH : 0]             data_counter_ch1;
+output wire [FF_ADDR_WIDTH : 0]             data_counter_ch2;
 output wire                                 o_empty;
 output wire                                 o_full;
 
@@ -147,6 +147,6 @@ fifo_ch2
     );
 
 assign o_full = |full;
-assign o_empty = &o_empty;
+assign o_empty = &empty;
 
 endmodule

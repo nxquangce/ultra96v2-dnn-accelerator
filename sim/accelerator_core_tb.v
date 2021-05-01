@@ -50,7 +50,7 @@ reg [REG_WIDTH - 1 : 0]                               i_conf_ctrl;
 reg [REG_WIDTH - 1 : 0]                               i_conf_cnt;
 reg [REG_WIDTH - 1 : 0]                               i_conf_knx;
 reg [REG_WIDTH - 1 : 0]                               i_conf_weightinterval;
-reg [REG_WIDTH - 1 : 0]                               i_conf_kernelsize;
+reg [REG_WIDTH - 1 : 0]                               i_conf_kernelshape;
 accelerator_core uut(
     .clk                    (clk),
     .rst                    (rst),
@@ -72,7 +72,7 @@ accelerator_core uut(
     .i_conf_cnt             (i_conf_cnt),
     .i_conf_knx             (i_conf_knx),
     .i_conf_weightinterval  (i_conf_weightinterval),
-    .i_conf_kernelsize      (i_conf_kernelsize)
+    .i_conf_kernelshape     (i_conf_kernelshape)
     );
 
 accelerator_core_tb_data_gen stimulus(
@@ -104,13 +104,13 @@ initial begin
     i_conf_cnt <= 0;
     i_conf_knx <= 0;
     i_conf_weightinterval <= 0;
-    i_conf_kernelsize <= 0;
+    i_conf_kernelshape <= 0;
     #50 
     i_conf_ctrl <= 32'b1;
     i_conf_cnt <= 32'd50176;
     i_conf_knx <= 32'hffffffff;
     i_conf_weightinterval <= WEIGHT_INTERVAL;
-    i_conf_kernelsize <= 32'd3;
+    i_conf_kernelshape <= 32'h0020_0333;
 end
 
 endmodule

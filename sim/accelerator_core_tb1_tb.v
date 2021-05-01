@@ -36,6 +36,7 @@ parameter DATA_WIDTH    = 32;
 reg clk;
 reg rst;
 wire                                                  o_data_req;
+wire                                                  o_data_end;
 wire                                                  o_weight_req;
 wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
 wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
@@ -53,12 +54,15 @@ reg [REG_WIDTH - 1 : 0]                               i_conf_ctrl;
 reg [REG_WIDTH - 1 : 0]                               i_conf_cnt;
 reg [REG_WIDTH - 1 : 0]                               i_conf_knx;
 reg [REG_WIDTH - 1 : 0]                               i_conf_weightinterval;
-reg [REG_WIDTH - 1 : 0]                               i_conf_kernelsize;
+reg [REG_WIDTH - 1 : 0]                               i_conf_kernelshape;
+reg [REG_WIDTH - 1 : 0]                               i_conf_inputshape;
+
 
 accelerator_core uut(
     .clk                    (clk),
     .rst                    (rst),
     .o_data_req             (o_data_req),
+    .o_data_end             (o_data_end),
     .i_data                 (i_data),
     .i_data_val             (i_data_val),
     .o_weight_req           (o_weight_req),
@@ -76,7 +80,8 @@ accelerator_core uut(
     .i_conf_cnt             (i_conf_cnt),
     .i_conf_knx             (i_conf_knx),
     .i_conf_weightinterval  (i_conf_weightinterval),
-    .i_conf_kernelsize      (i_conf_kernelsize)
+    .i_conf_kernelshape     (i_conf_kernelshape),
+    .i_conf_inputshape      (i_conf_inputshape)
     );
 
 wire                      stall;
@@ -92,13 +97,14 @@ data_req data_req0(
     .rst        (rst),
     .i_req      (o_data_req),
     .i_stall    (stall),
-    .i_end      (0),
+    .i_end      (o_data_end),
     .o_addr     (addr),
     .o_rden     (rden)
     );
 
 bram_ctrl bram_ctrl0(
     .clk        (clk),
+    .rst        (rst),
     .addr       (addr),
     .wren       (0),
     .idat       (0),
@@ -159,13 +165,16 @@ initial begin
     i_conf_cnt <= 0;
     i_conf_knx <= 0;
     i_conf_weightinterval <= 0;
-    i_conf_kernelsize <= 0;
+    i_conf_kernelshape <= 0;
+    i_conf_inputshape <= 0;
+
     #50 
     i_conf_ctrl <= 32'b1;
     i_conf_cnt <= 32'd50176;
     i_conf_knx <= 32'hffffffff;
     i_conf_weightinterval <= WEIGHT_INTERVAL;
-    i_conf_kernelsize <= 32'd3;
+    i_conf_kernelshape <= 32'h0020_0333;
+    i_conf_inputshape <= 32'h0001_03e0;
 end
 
 endmodule

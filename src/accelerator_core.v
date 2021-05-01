@@ -24,6 +24,7 @@ module accelerator_core(
     clk,
     rst,
     o_data_req,
+    o_data_end,
     i_data,
     i_data_val,
     o_weight_req,
@@ -41,7 +42,8 @@ module accelerator_core(
     i_conf_cnt,
     i_conf_knx,
     i_conf_weightinterval,
-    i_conf_kernelsize
+    i_conf_kernelshape,
+    i_conf_inputshape
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,6 +61,7 @@ parameter NUM_RDATA     = 3;
 input  wire                                                  clk;
 input  wire                                                  rst;
 output wire                                                  o_data_req;
+output wire                                                  o_data_end;
 output wire                                                  o_weight_req;
 input  wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
 input  wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
@@ -76,7 +79,8 @@ input  wire [REG_WIDTH - 1 : 0]                              i_conf_ctrl;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_cnt;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_knx;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_weightinterval;
-input  wire [REG_WIDTH - 1 : 0]                              i_conf_kernelsize;
+input  wire [REG_WIDTH - 1 : 0]                              i_conf_kernelshape;
+input  wire [REG_WIDTH - 1 : 0]                              i_conf_inputshape;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -92,6 +96,7 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .clk                    (clk),
     .rst                    (rst),
     .o_data_req             (o_data_req),
+    .o_data_end             (o_data_end),
     .i_data                 (i_data),
     .i_data_val             (i_data_val),
     .o_weight_req           (o_weight_req),
@@ -109,7 +114,8 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .o_psum_kn3_val         (accum_i_psum_val[3]),
     .i_conf_ctrl            (i_conf_ctrl),
     .i_conf_weightinterval  (i_conf_weightinterval),
-    .i_conf_kernelsize      (i_conf_kernelsize)
+    .i_conf_kernelshape     (i_conf_kernelshape),
+    .i_conf_inputshape      (i_conf_inputshape)
     );
 
 psum_accumulator psum_accumulator_0(

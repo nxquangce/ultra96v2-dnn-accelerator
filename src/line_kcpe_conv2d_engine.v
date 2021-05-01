@@ -27,6 +27,7 @@ module line_kcpe_conv2d_engine(
     clk,
     rst,
     o_data_req,
+    o_data_end,
     i_data,
     i_data_val,
     o_weight_req,
@@ -44,7 +45,8 @@ module line_kcpe_conv2d_engine(
     o_psum_kn3_val,
     i_conf_ctrl,
     i_conf_weightinterval,
-    i_conf_kernelsize
+    i_conf_kernelshape,
+    i_conf_inputshape
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,6 +67,7 @@ parameter NUM_KCPE_WIDTH = 2;
 input  wire                                                  clk;
 input  wire                                                  rst;
 output wire                                                  o_data_req;
+output wire                                                  o_data_end;
 output wire                                                  o_weight_req;
 input  wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
 input  wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
@@ -86,7 +89,9 @@ output wire                                                  o_psum_kn3_val;
 
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_ctrl;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_weightinterval;
-input  wire [REG_WIDTH - 1 : 0]                              i_conf_kernelsize;
+input  wire [REG_WIDTH - 1 : 0]                              i_conf_kernelshape;
+input  wire [REG_WIDTH - 1 : 0]                              i_conf_inputshape;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
 // Input signals
@@ -316,10 +321,13 @@ result_router result_router_0(
     );    
 
 //// Control logic
-wire enb;
-reg  init;
-reg  data_req_reg;
-reg  weight_req_reg;
+wire        enb;
+reg         init;
+reg         data_req_reg;
+reg         weight_req_reg;
+reg [7 : 0] data_req_cnt;
+wire        data_req_cnt_max_vld;
+
 assign enb = i_conf_ctrl[0];
 
 // Data control
@@ -332,7 +340,19 @@ always @(posedge clk) begin
     end
 end
 
+assign data_req_cnt_max_vld = (data_req_cnt == i_conf_inputshape[7:0]);
+
+always @(posedge clk) begin
+    if (rst) begin
+        data_req_cnt <= 0;
+    end
+    else if (o_data_req) begin
+        data_req_cnt <= (data_req_cnt_max_vld) ? 0 : data_req_cnt + 1'b1;
+    end
+end
+
 assign o_data_req = data_req_reg;
+assign o_data_end = data_req_cnt_max_vld;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -376,7 +396,7 @@ reg [NUM_KCPE_WIDTH - 1 : 0] o_weight_req_cnt;
 reg [KERNEL_SIZE_WIDTH - 1 : 0] weight_req_cnt;
 wire weight_req_cnt_max_vld;
 
-assign weight_req_cnt_max_vld = (weight_req_cnt == i_conf_kernelsize[KERNEL_SIZE_WIDTH - 1 : 0]);
+assign weight_req_cnt_max_vld = (weight_req_cnt == i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0]);
 always @(posedge clk) begin
     if (rst) begin
         weight_req_cnt <= 0;

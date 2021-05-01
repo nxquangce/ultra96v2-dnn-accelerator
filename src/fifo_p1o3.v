@@ -49,7 +49,7 @@ input  wire [DAT_WIDTH - 1 : 0]             wr_data;
 input  wire                                 rd_req;
 output wire [DAT_WIDTH * NUM_RDATA - 1 : 0] rd_data;
 output wire                                 rd_data_val;
-output wire [FF_ADDR_WIDTH - 1 : 0]         data_counter;
+output wire [FF_ADDR_WIDTH : 0]             data_counter;
 output wire                                 full;
 output wire                                 empty;
 
@@ -78,7 +78,7 @@ assign wr_enb = ~full  & wr_req;
 assign rd_enb = ~empty & rd_req;
 
 // FIFO Data counter
-reg [FF_ADDR_WIDTH - 1 : 0] data_counter_reg;
+reg [FF_ADDR_WIDTH : 0] data_counter_reg;
 always @(posedge clk) begin
     if (rst) begin
         data_counter_reg <= 0;
@@ -117,6 +117,12 @@ end
 
 // Read 3 data
 reg rd_data_val_reg;
+wire [FF_ADDR_WIDTH - 1 : 0] rd_addr1;
+wire [FF_ADDR_WIDTH - 1 : 0] rd_addr2;
+
+assign rd_addr1 = rd_addr + 3'd1;
+assign rd_addr2 = rd_addr + 3'd2;
+
 always @(posedge clk) begin
     if (rst) begin
         rd_data_reg[0]  <= 0;
@@ -127,8 +133,8 @@ always @(posedge clk) begin
     end
     else if (rd_enb) begin
         rd_data_reg[0]  <= ff_mem[rd_addr];
-        rd_data_reg[1]  <= ff_mem[rd_addr + 1'b1];
-        rd_data_reg[2]  <= ff_mem[rd_addr + 'd2];
+        rd_data_reg[1]  <= ff_mem[rd_addr1];
+        rd_data_reg[2]  <= ff_mem[rd_addr2];
         rd_ptr          <= rd_ptr + 1'b1;
         rd_data_val_reg <= 1'b1;
     end
