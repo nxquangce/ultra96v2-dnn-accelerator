@@ -56,6 +56,7 @@ reg [REG_WIDTH - 1 : 0]                               i_conf_knx;
 reg [REG_WIDTH - 1 : 0]                               i_conf_weightinterval;
 reg [REG_WIDTH - 1 : 0]                               i_conf_kernelshape;
 reg [REG_WIDTH - 1 : 0]                               i_conf_inputshape;
+reg [REG_WIDTH - 1 : 0]                               i_conf_inputrstcnt;
 
 
 accelerator_core uut(
@@ -81,7 +82,8 @@ accelerator_core uut(
     .i_conf_knx             (i_conf_knx),
     .i_conf_weightinterval  (i_conf_weightinterval),
     .i_conf_kernelshape     (i_conf_kernelshape),
-    .i_conf_inputshape      (i_conf_inputshape)
+    .i_conf_inputshape      (i_conf_inputshape),
+    .i_conf_inputrstcnt     (i_conf_inputrstcnt)
     );
 
 wire                      stall;
@@ -167,6 +169,7 @@ initial begin
     i_conf_weightinterval <= 0;
     i_conf_kernelshape <= 0;
     i_conf_inputshape <= 0;
+    i_conf_inputrstcnt <= 0;
 
     #50 
     i_conf_ctrl <= 32'b1;
@@ -175,6 +178,7 @@ initial begin
     i_conf_weightinterval <= WEIGHT_INTERVAL;
     i_conf_kernelshape <= 32'h0020_0333;
     i_conf_inputshape <= 32'h0001_03e0;
+    i_conf_inputrstcnt <= 32'd497283; // 222 * 222 - 1
 end
 
 endmodule

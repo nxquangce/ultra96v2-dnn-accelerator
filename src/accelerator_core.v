@@ -43,7 +43,8 @@ module accelerator_core(
     i_conf_knx,
     i_conf_weightinterval,
     i_conf_kernelshape,
-    i_conf_inputshape
+    i_conf_inputshape,
+    i_conf_inputrstcnt
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -81,6 +82,7 @@ input  wire [REG_WIDTH - 1 : 0]                              i_conf_knx;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_weightinterval;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_kernelshape;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_inputshape;
+input  wire [REG_WIDTH - 1 : 0]                              i_conf_inputrstcnt;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -115,7 +117,8 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .i_conf_ctrl            (i_conf_ctrl),
     .i_conf_weightinterval  (i_conf_weightinterval),
     .i_conf_kernelshape     (i_conf_kernelshape),
-    .i_conf_inputshape      (i_conf_inputshape)
+    .i_conf_inputshape      (i_conf_inputshape),
+    .i_conf_inputrstcnt     (i_conf_inputrstcnt)
     );
 
 psum_accumulator psum_accumulator_0(

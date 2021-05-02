@@ -46,7 +46,8 @@ module line_kcpe_conv2d_engine(
     i_conf_ctrl,
     i_conf_weightinterval,
     i_conf_kernelshape,
-    i_conf_inputshape
+    i_conf_inputshape,
+    i_conf_inputrstcnt
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,6 +92,7 @@ input  wire [REG_WIDTH - 1 : 0]                              i_conf_ctrl;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_weightinterval;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_kernelshape;
 input  wire [REG_WIDTH - 1 : 0]                              i_conf_inputshape;
+input  wire [REG_WIDTH - 1 : 0]                              i_conf_inputrstcnt;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -301,6 +303,18 @@ kernel_channel_pe_2
     );
 
 // Psum output
+wire [BIT_WIDTH - 1 : 0] router_kn0;
+wire [BIT_WIDTH - 1 : 0] router_kn1;
+wire [BIT_WIDTH - 1 : 0] router_kn2;
+wire [BIT_WIDTH - 1 : 0] router_kn3;
+wire                     router_kn0_val;
+wire                     router_kn1_val;
+wire                     router_kn2_val;
+wire                     router_kn3_val;
+wire                     invalid_knx_val;
+wire                     valid_knx_cnt_max_val;
+reg                [7:0] valid_knx_cnt;
+
 result_router result_router_0(
     .clk                (clk),
     .rst                (rst),
@@ -310,23 +324,44 @@ result_router result_router_0(
     .i_psum_kcpe1_val   (engine_o_psum_kcpe1_val),
     .i_psum_kcpe2       (engine_o_psum_kcpe2),
     .i_psum_kcpe2_val   (engine_o_psum_kcpe2_val),
-    .o_psum_kn0         (o_psum_kn0),
-    .o_psum_kn0_val     (o_psum_kn0_val),
-    .o_psum_kn1         (o_psum_kn1),
-    .o_psum_kn1_val     (o_psum_kn1_val),
-    .o_psum_kn2         (o_psum_kn2),
-    .o_psum_kn2_val     (o_psum_kn2_val),
-    .o_psum_kn3         (o_psum_kn3),
-    .o_psum_kn3_val     (o_psum_kn3_val)
-    );    
+    .o_psum_kn0         (router_kn0),
+    .o_psum_kn0_val     (router_kn0_val),
+    .o_psum_kn1         (router_kn1),
+    .o_psum_kn1_val     (router_kn1_val),
+    .o_psum_kn2         (router_kn2),
+    .o_psum_kn2_val     (router_kn2_val),
+    .o_psum_kn3         (router_kn3),
+    .o_psum_kn3_val     (router_kn3_val)
+    );
+
+assign valid_knx_cnt_max_val = valid_knx_cnt == (i_conf_inputshape[7:0] - 1'b1);
+assign invalid_knx_val = valid_knx_cnt > (i_conf_inputshape[7:0] - i_conf_kernelshape[3:0]);
+
+always @(posedge clk) begin
+    if (rst) begin
+        valid_knx_cnt <= 0;
+    end
+    else if (router_kn0_val) begin
+        valid_knx_cnt <= (valid_knx_cnt_max_val) ? 0 : valid_knx_cnt + 1'b1;
+    end
+end
+
+assign o_psum_kn0 = router_kn0;
+assign o_psum_kn1 = router_kn1;
+assign o_psum_kn2 = router_kn2;
+assign o_psum_kn3 = router_kn3;
+assign o_psum_kn0_val = router_kn0_val & ~invalid_knx_val;
+assign o_psum_kn1_val = router_kn1_val & ~invalid_knx_val;
+assign o_psum_kn2_val = router_kn2_val & ~invalid_knx_val;
+assign o_psum_kn3_val = router_kn3_val & ~invalid_knx_val;
 
 //// Control logic
-wire        enb;
-reg         init;
-reg         data_req_reg;
-reg         weight_req_reg;
-reg [7 : 0] data_req_cnt;
-wire        data_req_cnt_max_vld;
+wire                    enb;
+reg                     init;
+reg                     data_req_reg;
+reg                     weight_req_reg;
+reg [REG_WIDTH - 1 : 0] data_req_cnt;
+wire                    data_req_cnt_max_vld;
 
 assign enb = i_conf_ctrl[0];
 
@@ -340,7 +375,7 @@ always @(posedge clk) begin
     end
 end
 
-assign data_req_cnt_max_vld = (data_req_cnt == i_conf_inputshape[7:0]);
+assign data_req_cnt_max_vld = (data_req_cnt == i_conf_inputrstcnt);
 
 always @(posedge clk) begin
     if (rst) begin
