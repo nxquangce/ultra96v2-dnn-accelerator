@@ -128,6 +128,7 @@ wire                                                buffer_o_weight_3ch3pos_kn0_
 wire                                                buffer_o_weight_3ch3pos_kn1_val;
 wire                                                buffer_o_weight_3ch3pos_kn2_val;
 wire                                                buffer_o_weight_3ch3pos_kn3_val;
+wire                                                buffer_o_weight_full;
 
 wire [BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL - 1 : 0] engine_i_weight_3ch3kn_pos0;
 wire [BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL - 1 : 0] engine_i_weight_3ch3kn_pos1;
@@ -213,7 +214,8 @@ weight_buffer weight_buffer_0(
     .o_data_3ch_kn2     (buffer_o_weight_3ch3pos_kn2),
     .o_data_3ch_kn2_val (buffer_o_weight_3ch3pos_kn2_val),
     .o_data_3ch_kn3     (buffer_o_weight_3ch3pos_kn3),
-    .o_data_3ch_kn3_val (buffer_o_weight_3ch3pos_kn3_val)
+    .o_data_3ch_kn3_val (buffer_o_weight_3ch3pos_kn3_val),
+    .o_full             (buffer_o_weight_full)
     );
 
 // Convert weight from kernel to position
@@ -358,36 +360,38 @@ assign o_psum_kn3_val = router_kn3_val & ~invalid_knx_val;
 //// Control logic
 wire                    enb;
 reg                     init;
-reg                     data_req_reg;
-reg                     weight_req_reg;
-reg [REG_WIDTH - 1 : 0] data_req_cnt;
-wire                    data_req_cnt_max_vld;
+reg                     odata_req_reg;
+reg                     idata_req_reg;
+reg [REG_WIDTH - 1 : 0] odata_req_cnt;
+wire                    odata_req_cnt_max_vld;
+wire                    odata_req_cnt_premax_vld;
 
 assign enb = i_conf_ctrl[0];
 
 // Data control
 always @(posedge clk) begin
     if (rst) begin
-        data_req_reg <= 0;
+        odata_req_reg <= 0;
     end
     else if (enb) begin
-        data_req_reg <= ~buffer_o_data_full;
+        odata_req_reg <= ~buffer_o_data_full;
     end
 end
 
-assign data_req_cnt_max_vld = (data_req_cnt == i_conf_inputrstcnt);
+assign odata_req_cnt_max_vld = (odata_req_cnt == i_conf_inputrstcnt);
+assign odata_req_cnt_premax_vld = (odata_req_cnt == (i_conf_inputrstcnt - i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0]));
 
 always @(posedge clk) begin
     if (rst) begin
-        data_req_cnt <= 0;
+        odata_req_cnt <= 0;
     end
     else if (o_data_req) begin
-        data_req_cnt <= (data_req_cnt_max_vld) ? 0 : data_req_cnt + 1'b1;
+        odata_req_cnt <= (odata_req_cnt_max_vld) ? 0 : odata_req_cnt + 1'b1;
     end
 end
 
-assign o_data_req = data_req_reg;
-assign o_data_end = data_req_cnt_max_vld;
+assign o_data_req = odata_req_reg;
+assign o_data_end = odata_req_cnt_max_vld;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -398,61 +402,54 @@ always @(posedge clk) begin
     end
 end
 
-assign i_data_req = (init & buffer_o_data_full) | engine_o_psum_kcpe0_val;
+always @(posedge clk) begin
+    if (rst | o_data_end) begin
+        idata_req_reg <= 1'b0;
+    end
+    else if (buffer_o_data_full | i_weight_req) begin
+        idata_req_reg <= 1'b1;
+    end
+end
+
+assign i_data_req = (init & buffer_o_data_full) | idata_req_reg;
 
 // Weight control
-reg [REG_WIDTH - 1 : 0] psum_per_weight_cnt;
-wire                    weight_req;
+reg                             weight_init;
+reg                             weight_line_req_reg;
+reg [KERNEL_SIZE_WIDTH - 1 : 0] weight_line_req_cnt;
+wire                            weight_line_req_cnt_max_vld;
 
 always @(posedge clk) begin
     if (rst) begin
-        psum_per_weight_cnt <= 0;
+        weight_init <= 1'b0;
     end
-    else if (engine_o_psum_kcpe0_val) begin
-        psum_per_weight_cnt <= (weight_req) ? 0 : psum_per_weight_cnt + 1'b1;
+    else if (weight_line_req_cnt_max_vld) begin
+        weight_init <= 1'b1;
     end
 end
 
-assign weight_req = (psum_per_weight_cnt == i_conf_weightinterval);
+assign weight_line_req_cnt_max_vld = weight_line_req_cnt == (i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0] - 1'b1);
 
 always @(posedge clk) begin
     if (rst) begin
-        weight_req_reg <= 0;
+        weight_line_req_cnt <= 0;
     end
-    else if (enb) begin
-        weight_req_reg <= weight_req;
-    end    
-end
-
-assign i_weight_req = (init & buffer_o_data_full) | weight_req_reg;
-
-reg o_weight_req_reg;
-reg [NUM_KCPE_WIDTH - 1 : 0] o_weight_req_cnt;
-reg [KERNEL_SIZE_WIDTH - 1 : 0] weight_req_cnt;
-wire weight_req_cnt_max_vld;
-
-assign weight_req_cnt_max_vld = (weight_req_cnt == i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0]);
-always @(posedge clk) begin
-    if (rst) begin
-        weight_req_cnt <= 0;
-    end
-    else if (i_weight_req) begin
-        weight_req_cnt <= (weight_req_cnt_max_vld) ? 0 : weight_req_cnt + 1'b1;
+    else if (weight_line_req_reg) begin
+        weight_line_req_cnt <= (weight_line_req_cnt_max_vld) ? 0 : weight_line_req_cnt + 1'b1;
     end
 end
 
 always @(posedge clk) begin
-    if (rst | (o_weight_req_cnt == NUM_KCPE)) begin
-        o_weight_req_cnt <= 0;
-        o_weight_req_reg <= 0;
+    if (rst | weight_line_req_cnt_max_vld) begin
+        weight_line_req_reg <= 1'b0;
     end
-    else if (weight_req_cnt_max_vld) begin
-        o_weight_req_reg <= 1'b1;
-        o_weight_req_cnt <= o_weight_req_cnt + 1'b1;
-    end 
+    else if (!weight_init | odata_req_cnt_premax_vld) begin
+        weight_line_req_reg <= 1'b1;
+    end
 end
 
-assign o_weight_req = o_weight_req_reg;
+assign o_weight_req = weight_line_req_reg;
+assign i_weight_req = buffer_o_weight_full;
 
 
 //////////////////////////////////////////////////////////////////////////////////

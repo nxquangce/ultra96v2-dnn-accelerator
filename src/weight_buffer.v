@@ -39,7 +39,8 @@ module weight_buffer(
     o_data_3ch_kn2,
     o_data_3ch_kn2_val,
     o_data_3ch_kn3,
-    o_data_3ch_kn3_val
+    o_data_3ch_kn3_val,
+    o_full
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,6 +72,7 @@ output wire [DAT_WIDTH * NUM_CHANNEL * NUM_RDATA - 1 : 0] o_data_3ch_kn2;
 output wire                                               o_data_3ch_kn2_val;
 output wire [DAT_WIDTH * NUM_CHANNEL * NUM_RDATA - 1 : 0] o_data_3ch_kn3;
 output wire                                               o_data_3ch_kn3_val;
+output wire                                               o_full;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -83,22 +85,22 @@ reg [NUM_RDATA - 1 : 0] weight_val_reg [NUM_KERNEL - 1 : 0];
 // Cache weight data
 always @(posedge clk) begin
     if (rst) begin
-        weight_kn0_reg[0] = 0;
-        weight_kn1_reg[0] = 0;
-        weight_kn2_reg[0] = 0;
-        weight_kn3_reg[0] = 0;
-        weight_kn0_reg[1] = 0;
-        weight_kn1_reg[1] = 0;
-        weight_kn2_reg[1] = 0;
-        weight_kn3_reg[1] = 0;
-        weight_kn0_reg[2] = 0;
-        weight_kn1_reg[2] = 0;
-        weight_kn2_reg[2] = 0;
-        weight_kn3_reg[2] = 0;
-        // weight_kn0_reg[3] = 0;
-        // weight_kn1_reg[3] = 0;
-        // weight_kn2_reg[3] = 0;
-        // weight_kn3_reg[3] = 0;
+        weight_kn0_reg[0] <= 0;
+        weight_kn1_reg[0] <= 0;
+        weight_kn2_reg[0] <= 0;
+        weight_kn3_reg[0] <= 0;
+        weight_kn0_reg[1] <= 0;
+        weight_kn1_reg[1] <= 0;
+        weight_kn2_reg[1] <= 0;
+        weight_kn3_reg[1] <= 0;
+        weight_kn0_reg[2] <= 0;
+        weight_kn1_reg[2] <= 0;
+        weight_kn2_reg[2] <= 0;
+        weight_kn3_reg[2] <= 0;
+        // weight_kn0_reg[3] <= 0;
+        // weight_kn1_reg[3] <= 0;
+        // weight_kn2_reg[3] <= 0;
+        // weight_kn3_reg[3] <= 0;
     end
     else begin
         if (i_data_kn0_val) begin
@@ -108,22 +110,22 @@ always @(posedge clk) begin
             // weight_kn0_reg[3] <= weight_kn0_reg[2];
         end
         if (i_data_kn1_val) begin
-            weight_kn1_reg[0] = i_data_kn1;
-            weight_kn1_reg[1] = weight_kn1_reg[0];
-            weight_kn1_reg[2] = weight_kn1_reg[1];
-            // weight_kn1_reg[3] = weight_kn1_reg[2];
+            weight_kn1_reg[0] <= i_data_kn1;
+            weight_kn1_reg[1] <= weight_kn1_reg[0];
+            weight_kn1_reg[2] <= weight_kn1_reg[1];
+            // weight_kn1_reg[3] <= weight_kn1_reg[2];
         end
         if (i_data_kn2_val) begin
-            weight_kn2_reg[0] = i_data_kn2;
-            weight_kn2_reg[1] = weight_kn2_reg[0];
-            weight_kn2_reg[2] = weight_kn2_reg[1];
-            // weight_kn2_reg[3] = weight_kn2_reg[2];
+            weight_kn2_reg[0] <= i_data_kn2;
+            weight_kn2_reg[1] <= weight_kn2_reg[0];
+            weight_kn2_reg[2] <= weight_kn2_reg[1];
+            // weight_kn2_reg[3] <= weight_kn2_reg[2];
         end
         if (i_data_kn3_val) begin
-            weight_kn3_reg[0] = i_data_kn3;
-            weight_kn3_reg[1] = weight_kn3_reg[0];
-            weight_kn3_reg[2] = weight_kn3_reg[1];
-            // weight_kn3_reg[3] = weight_kn3_reg[2];
+            weight_kn3_reg[0] <= i_data_kn3;
+            weight_kn3_reg[1] <= weight_kn3_reg[0];
+            weight_kn3_reg[2] <= weight_kn3_reg[1];
+            // weight_kn3_reg[3] <= weight_kn3_reg[2];
         end
     end
 end
@@ -159,6 +161,8 @@ always @(posedge clk) begin
         end
     end
 end
+
+assign o_full = &weight_val_reg[0] & &weight_val_reg[1] & &weight_val_reg[2] & &weight_val_reg[3];
 
 // Output data valid
 assign o_data_3ch_kn0_val = &weight_val_reg[0] & i_data_req;

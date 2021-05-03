@@ -81,8 +81,14 @@ always @(posedge clk) begin
         i_weight_val_reg <= 0;
     end
     else if (o_weight_req) begin
-        i_weight_reg <= i_weight_reg + 1'b1;
+        i_weight_reg[BIT_WIDTH * NUM_CHANNEL * 1 - 1 : 0] <= i_weight_reg[BIT_WIDTH * NUM_CHANNEL * 1 - 1 : 0] + 1'b1;
+        i_weight_reg[BIT_WIDTH * NUM_CHANNEL * 2 - 1 : BIT_WIDTH * NUM_CHANNEL * 1] <= i_weight_reg[BIT_WIDTH * NUM_CHANNEL * 2 - 1 : BIT_WIDTH * NUM_CHANNEL * 1] + 1'b1;
+        i_weight_reg[BIT_WIDTH * NUM_CHANNEL * 3 - 1 : BIT_WIDTH * NUM_CHANNEL * 2] <= i_weight_reg[BIT_WIDTH * NUM_CHANNEL * 3 - 1 : BIT_WIDTH * NUM_CHANNEL * 2] + 1'b1;
+        i_weight_reg[BIT_WIDTH * NUM_CHANNEL * 4 - 1 : BIT_WIDTH * NUM_CHANNEL * 3] <= i_weight_reg[BIT_WIDTH * NUM_CHANNEL * 4 - 1 : BIT_WIDTH * NUM_CHANNEL * 3] + 1'b1;
         i_weight_val_reg <= 1;
+    end
+    else begin
+        i_weight_val_reg <= 0;
     end
 end
 
