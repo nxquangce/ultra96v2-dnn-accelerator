@@ -32,9 +32,9 @@ module bram_ctrl(
     mem_addr,
     mem_idat,
     mem_odat,
+    mem_wren,
     mem_enb,
-    mem_rst,
-    mem_wen
+    mem_rst
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,9 +59,9 @@ output                     oval;
 output [ADDR_WIDTH - 1 : 0] mem_addr;
 output [DAT_WIDTH - 1 : 0]  mem_idat;
 input  [DAT_WIDTH - 1 : 0]  mem_odat;
+output [NUM_BYTE - 1 : 0]   mem_wren;
 output                      mem_enb;
 output                      mem_rst;
-output [NUM_BYTE - 1 : 0]   mem_wen;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -71,7 +71,8 @@ reg                     odat_val_reg;
 assign mem_enb = 1'b1;
 assign mem_rst = 1'b0;
 assign mem_addr = addr;
-assign mem_wen = {4{wren}};
+assign mem_wren = {4{wren}};
+assign mem_idat = idat;
 assign oval = odat_val_reg;
 assign odat = (oval) ? mem_odat : odat_reg;
 

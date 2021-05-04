@@ -51,7 +51,6 @@ reg  [PIX_WIDTH - 1 : 0] odata_reg_p0;
 reg  [DAT_WIDTH - 1 : 0] cache_reg_p1;
 reg  [1:0]               state;
 reg                      oval_stall_reg;
-wire [8:0]               mask;
 wire [DAT_WIDTH * 2 - 1 : 0] dat_concat;
 
 always @(posedge clk) begin
