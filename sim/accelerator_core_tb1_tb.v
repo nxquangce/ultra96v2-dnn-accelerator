@@ -118,7 +118,7 @@ bram_ctrl bram_ctrl0(
     .mem_odat   (mem_rd_data),
     .mem_enb    (),
     .mem_rst    (),
-    .mem_wen    ()
+    .mem_wren   ()
     );
 
 data_bram_tb_sim bram0(
@@ -138,15 +138,154 @@ pixel_concat concat(
     .ostall     (stall)
     );
 
+wire [ADDR_WIDTH - 1 : 0] memx_weight_addr;
+wire                      memx_weight_rden;
+
+wire [DATA_WIDTH - 1 : 0] memctrl0_weight_odat;
+wire [DATA_WIDTH - 1 : 0] memctrl1_weight_odat;
+wire [DATA_WIDTH - 1 : 0] memctrl2_weight_odat;
+wire [DATA_WIDTH - 1 : 0] memctrl3_weight_odat;
+
+wire                      memctrl0_weight_oval;
+wire                      memctrl1_weight_oval;
+wire                      memctrl2_weight_oval;
+wire                      memctrl3_weight_oval;
+
+wire [ADDR_WIDTH - 1 : 0] mem0_weight_addr;
+wire [ADDR_WIDTH - 1 : 0] mem1_weight_addr;
+wire [ADDR_WIDTH - 1 : 0] mem2_weight_addr;
+wire [ADDR_WIDTH - 1 : 0] mem3_weight_addr;
+
+wire [DATA_WIDTH - 1 : 0] mem0_weight_odat;
+wire [DATA_WIDTH - 1 : 0] mem1_weight_odat;
+wire [DATA_WIDTH - 1 : 0] mem2_weight_odat;
+wire [DATA_WIDTH - 1 : 0] mem3_weight_odat;
+
+weight_req weight_req_eng(
+    .clk        (clk),
+    .rst        (rst),
+    .i_req      (o_weight_req),
+    .o_dat      (i_weight),
+    .o_vld      (i_weight_val),
+    .memx_addr  (memx_weight_addr),
+    .memx_rden  (memx_weight_rden),
+    .mem0_odat  (memctrl0_weight_odat),
+    .mem0_oval  (memctrl0_weight_oval),
+    .mem1_odat  (memctrl1_weight_odat),
+    .mem1_oval  (memctrl1_weight_oval),
+    .mem2_odat  (memctrl2_weight_odat),
+    .mem2_oval  (memctrl2_weight_oval),
+    .mem3_odat  (memctrl3_weight_odat),
+    .mem3_oval  (memctrl3_weight_oval)
+    );
+
+bram_ctrl bram_ctrl_weight0(
+    .clk        (clk),
+    .rst        (rst),
+    .addr       (memx_weight_addr),
+    .rden       (memx_weight_rden),
+    .wren       (0),
+    .idat       (0),
+    .odat       (memctrl0_weight_odat),
+    .oval       (memctrl0_weight_oval),
+    .mem_addr   (mem0_weight_addr),
+    .mem_odat   (mem0_weight_odat),
+    .mem_idat   (),
+    .mem_enb    (),
+    .mem_rst    (),
+    .mem_wren   ()
+    );
+
+data_bram_tb_sim bram_weight0(
+    .clk        (clk),
+    .rst        (rst),
+    .irdaddr    (mem0_weight_addr),
+    .odat       (mem0_weight_odat)
+    );
+
+bram_ctrl bram_ctrl_weight1(
+    .clk        (clk),
+    .rst        (rst),
+    .addr       (memx_weight_addr),
+    .rden       (memx_weight_rden),
+    .wren       (0),
+    .idat       (0),
+    .odat       (memctrl1_weight_odat),
+    .oval       (memctrl1_weight_oval),
+    .mem_addr   (mem1_weight_addr),
+    .mem_odat   (mem1_weight_odat),
+    .mem_idat   (),
+    .mem_enb    (),
+    .mem_rst    (),
+    .mem_wren   ()
+    );
+
+data_bram_tb_sim bram_weight1(
+    .clk        (clk),
+    .rst        (rst),
+    .irdaddr    (mem1_weight_addr),
+    .odat       (mem1_weight_odat)
+    );
+
+bram_ctrl bram_ctrl_weight2(
+    .clk        (clk),
+    .rst        (rst),
+    .addr       (memx_weight_addr),
+    .rden       (memx_weight_rden),
+    .wren       (0),
+    .idat       (0),
+    .odat       (memctrl2_weight_odat),
+    .oval       (memctrl2_weight_oval),
+    .mem_addr   (mem2_weight_addr),
+    .mem_odat   (mem2_weight_odat),
+    .mem_idat   (),
+    .mem_enb    (),
+    .mem_rst    (),
+    .mem_wren   ()
+    );
+
+data_bram_tb_sim bram_weight2(
+    .clk        (clk),
+    .rst        (rst),
+    .irdaddr    (mem2_weight_addr),
+    .odat       (mem2_weight_odat)
+    );
+
+bram_ctrl bram_ctrl_weight3(
+    .clk        (clk),
+    .rst        (rst),
+    .addr       (memx_weight_addr),
+    .rden       (memx_weight_rden),
+    .wren       (0),
+    .idat       (0),
+    .odat       (memctrl3_weight_odat),
+    .oval       (memctrl3_weight_oval),
+    .mem_addr   (mem3_weight_addr),
+    .mem_odat   (mem3_weight_odat),
+    .mem_idat   (),
+    .mem_enb    (),
+    .mem_rst    (),
+    .mem_wren   ()
+    );
+
+data_bram_tb_sim bram_weight3(
+    .clk        (clk),
+    .rst        (rst),
+    .irdaddr    (mem3_weight_addr),
+    .odat       (mem3_weight_odat)
+    );
+
+
+
 accelerator_core_tb_data_gen weigth_stimulus(
     .clk            (clk),
     .rst            (rst),
     .o_data_req     (o_data_req),
     .i_data         (),
     .i_data_val     (),
-    .o_weight_req   (o_weight_req),
-    .i_weight       (i_weight),
-    .i_weight_val   (i_weight_val)
+    .o_weight_req   (),
+    .i_weight       (),
+    .i_weight_val   ()
     );
 
 initial begin
