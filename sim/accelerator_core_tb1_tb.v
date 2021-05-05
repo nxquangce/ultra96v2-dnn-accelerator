@@ -42,14 +42,23 @@ wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
 wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
 wire                                                  i_data_val;
 wire                                                  i_weight_val;
-wire [BIT_WIDTH - 1 : 0]                              o_psum_kn0;
-wire [BIT_WIDTH - 1 : 0]                              o_psum_kn1;
-wire [BIT_WIDTH - 1 : 0]                              o_psum_kn2;
-wire [BIT_WIDTH - 1 : 0]                              o_psum_kn3;
-wire                                                  o_psum_kn0_val;
-wire                                                  o_psum_kn1_val;
-wire                                                  o_psum_kn2_val;
-wire                                                  o_psum_kn3_val;
+// wire [BIT_WIDTH - 1 : 0]                              o_psum_kn0;
+// wire [BIT_WIDTH - 1 : 0]                              o_psum_kn1;
+// wire [BIT_WIDTH - 1 : 0]                              o_psum_kn2;
+// wire [BIT_WIDTH - 1 : 0]                              o_psum_kn3;
+// wire                                                  o_psum_kn0_val;
+// wire                                                  o_psum_kn1_val;
+// wire                                                  o_psum_kn2_val;
+// wire                                                  o_psum_kn3_val;
+
+wire                             [ADDR_WIDTH - 1 : 0] memctrl0_wadd;
+wire                                                  memctrl0_wren;
+wire                             [DATA_WIDTH - 1 : 0] memctrl0_idat;
+wire                             [ADDR_WIDTH - 1 : 0] memctrl0_radd;
+wire                                                  memctrl0_rden;
+wire                             [DATA_WIDTH - 1 : 0] memctrl0_odat;
+wire                                                  memctrl0_oval;
+
 reg [REG_WIDTH - 1 : 0]                               i_conf_ctrl;
 reg [REG_WIDTH - 1 : 0]                               i_conf_cnt;
 reg [REG_WIDTH - 1 : 0]                               i_conf_knx;
@@ -69,14 +78,21 @@ accelerator_core uut(
     .o_weight_req           (o_weight_req),
     .i_weight               (i_weight),
     .i_weight_val           (i_weight_val),
-    .o_psum_kn0             (o_psum_kn0),
-    .o_psum_kn0_val         (o_psum_kn0_val),
-    .o_psum_kn1             (o_psum_kn1),
-    .o_psum_kn1_val         (o_psum_kn1_val),
-    .o_psum_kn2             (o_psum_kn2),
-    .o_psum_kn2_val         (o_psum_kn2_val),
-    .o_psum_kn3             (o_psum_kn3),
-    .o_psum_kn3_val         (o_psum_kn3_val),
+    // .o_psum_kn0             (o_psum_kn0),
+    // .o_psum_kn0_val         (o_psum_kn0_val),
+    // .o_psum_kn1             (o_psum_kn1),
+    // .o_psum_kn1_val         (o_psum_kn1_val),
+    // .o_psum_kn2             (o_psum_kn2),
+    // .o_psum_kn2_val         (o_psum_kn2_val),
+    // .o_psum_kn3             (o_psum_kn3),
+    // .o_psum_kn3_val         (o_psum_kn3_val),
+    .memctrl0_wadd          (memctrl0_wadd),
+    .memctrl0_wren          (memctrl0_wren),
+    .memctrl0_idat          (memctrl0_idat),
+    .memctrl0_radd          (memctrl0_radd),
+    .memctrl0_rden          (memctrl0_rden),
+    .memctrl0_odat          (memctrl0_odat),
+    .memctrl0_oval          (memctrl0_oval),
     .i_conf_ctrl            (i_conf_ctrl),
     .i_conf_cnt             (i_conf_cnt),
     .i_conf_knx             (i_conf_knx),
@@ -276,6 +292,56 @@ data_bram_tb_sim bram_weight3(
     );
 
 
+// Psum BRAM
+wire [ADDR_WIDTH - 1 : 0] mem_psum_raddr;
+wire [ADDR_WIDTH - 1 : 0] mem_psum_waddr;
+wire [DATA_WIDTH - 1 : 0] mem_psum_rdata;
+wire [DATA_WIDTH - 1 : 0] mem_psum_wdata;
+wire                      mem_psum_wrenb;
+
+bram_ctrl psum_bram_ctrl_0(
+    .clk        (clk),
+    .rst        (rst),
+    .addr       (memctrl0_radd),
+    .wren       (0),
+    .idat       (0),
+    .rden       (memctrl0_rden),
+    .odat       (memctrl0_odat),
+    .oval       (memctrl0_oval),
+    .mem_addr   (mem_psum_raddr),
+    .mem_idat   (),
+    .mem_odat   (mem_psum_rdata),
+    .mem_enb    (),
+    .mem_rst    (),
+    .mem_wren   ()
+    );
+
+bram_ctrl psum_bram_ctrl_1(
+    .clk        (clk),
+    .rst        (rst),
+    .addr       (memctrl0_wadd),
+    .wren       (memctrl0_wren),
+    .idat       (memctrl0_idat),
+    .rden       (0),
+    .odat       (),
+    .oval       (),
+    .mem_addr   (mem_psum_waddr),
+    .mem_idat   (mem_psum_wdata),
+    .mem_odat   (),
+    .mem_enb    (),
+    .mem_rst    (),
+    .mem_wren   (mem_psum_wrenb)
+    );
+
+psum_bram_tb_sim psum_bram(
+    .clk        (clk),
+    .rst        (rst),
+    .waddr      (mem_psum_waddr),
+    .idat       (mem_psum_wdata),
+    .wren       (mem_psum_wrenb),
+    .raddr      (mem_psum_raddr),
+    .odat       (mem_psum_rdata)
+    );
 
 accelerator_core_tb_data_gen weigth_stimulus(
     .clk            (clk),
@@ -317,7 +383,7 @@ initial begin
     i_conf_weightinterval <= WEIGHT_INTERVAL;
     i_conf_kernelshape <= 32'h0020_0333;
     i_conf_inputshape <= 32'h0001_03e0;
-    i_conf_inputrstcnt <= 32'd497283; // 222 * 222 - 1
+    i_conf_inputrstcnt <= 32'd49283; // 222 * 222 - 1
 end
 
 endmodule

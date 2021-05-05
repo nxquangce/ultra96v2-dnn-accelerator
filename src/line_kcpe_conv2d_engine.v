@@ -43,6 +43,7 @@ module line_kcpe_conv2d_engine(
     o_psum_kn2_val,
     o_psum_kn3,
     o_psum_kn3_val,
+    o_psum_end,
     i_conf_ctrl,
     i_conf_weightinterval,
     i_conf_kernelshape,
@@ -52,47 +53,51 @@ module line_kcpe_conv2d_engine(
 
 ////////////////////////////////////////////////////////////////////////////////
 // Parameter declarations
-parameter BIT_WIDTH     = 8;
-parameter NUM_CHANNEL   = 3;
-parameter NUM_KERNEL    = 4;
-parameter NUM_KCPE      = 3;    // Number of kernel-channel PE
-parameter REG_WIDTH     = 32;
+parameter BIT_WIDTH         = 8;
+parameter NUM_CHANNEL       = 3;
+parameter NUM_KERNEL        = 4;
+parameter NUM_KCPE          = 3;    // Number of kernel-channel PE
+parameter REG_WIDTH         = 32;
 
-parameter NUM_RDATA     = NUM_KCPE;
+parameter NUM_RDATA         = NUM_KCPE;
 
 parameter KERNEL_SIZE_WIDTH = 3;
-parameter NUM_KCPE_WIDTH = 2;
+parameter NUM_KCPE_WIDTH    = 2;
+
+localparam IN_INPUT_DAT_WIDTH  = BIT_WIDTH * NUM_CHANNEL;
+localparam IN_WEIGHT_DAT_WIDTH = BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
-input  wire                                                  clk;
-input  wire                                                  rst;
-output wire                                                  o_data_req;
-output wire                                                  o_data_end;
-output wire                                                  o_weight_req;
-input  wire [(BIT_WIDTH * NUM_CHANNEL             ) - 1 : 0] i_data;
-input  wire [(BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL) - 1 : 0] i_weight;
+input  wire                               clk;
+input  wire                               rst;
+output wire                               o_data_req;
+output wire                               o_data_end;
+output wire                               o_weight_req;
+input  wire  [IN_INPUT_DAT_WIDTH - 1 : 0] i_data;
+input  wire [IN_WEIGHT_DAT_WIDTH - 1 : 0] i_weight;
 // input  wire [(BIT_WIDTH * NUM_KERNEL              ) - 1 : 0] i_psum;
-input  wire                                                  i_data_val;
-input  wire                                                  i_weight_val;
+input  wire                               i_data_val;
+input  wire                               i_weight_val;
 // input  wire                                                  i_psum_val;
 // output wire [(BIT_WIDTH * NUM_KERNEL              ) - 1 : 0] o_psum;
 // output wire [NUM_KERNEL - 1 : 0]                             o_psum_val;
-output wire [BIT_WIDTH - 1 : 0]                              o_psum_kn0;
-output wire [BIT_WIDTH - 1 : 0]                              o_psum_kn1;
-output wire [BIT_WIDTH - 1 : 0]                              o_psum_kn2;
-output wire [BIT_WIDTH - 1 : 0]                              o_psum_kn3;
-output wire                                                  o_psum_kn0_val;
-output wire                                                  o_psum_kn1_val;
-output wire                                                  o_psum_kn2_val;
-output wire                                                  o_psum_kn3_val;
+output wire           [BIT_WIDTH - 1 : 0] o_psum_kn0;
+output wire           [BIT_WIDTH - 1 : 0] o_psum_kn1;
+output wire           [BIT_WIDTH - 1 : 0] o_psum_kn2;
+output wire           [BIT_WIDTH - 1 : 0] o_psum_kn3;
+output wire                               o_psum_kn0_val;
+output wire                               o_psum_kn1_val;
+output wire                               o_psum_kn2_val;
+output wire                               o_psum_kn3_val;
+output wire                               o_psum_end;
 // output wire [REG_WIDTH * NUM_KCPE - 1 : 0]      err_psum_val;
 
-input  wire [REG_WIDTH - 1 : 0]                              i_conf_ctrl;
-input  wire [REG_WIDTH - 1 : 0]                              i_conf_weightinterval;
-input  wire [REG_WIDTH - 1 : 0]                              i_conf_kernelshape;
-input  wire [REG_WIDTH - 1 : 0]                              i_conf_inputshape;
-input  wire [REG_WIDTH - 1 : 0]                              i_conf_inputrstcnt;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_ctrl;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_weightinterval;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelshape;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_inputshape;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -316,6 +321,8 @@ wire                     router_kn3_val;
 wire                     invalid_knx_val;
 wire                     valid_knx_cnt_max_val;
 reg                [7:0] valid_knx_cnt;
+reg  [REG_WIDTH - 1 : 0] psum_line_vld_cnt;
+wire                     psum_line_vld_cnt_max_val;
 
 result_router result_router_0(
     .clk                (clk),
@@ -356,6 +363,19 @@ assign o_psum_kn0_val = router_kn0_val & ~invalid_knx_val;
 assign o_psum_kn1_val = router_kn1_val & ~invalid_knx_val;
 assign o_psum_kn2_val = router_kn2_val & ~invalid_knx_val;
 assign o_psum_kn3_val = router_kn3_val & ~invalid_knx_val;
+
+assign psum_line_vld_cnt_max_val = (psum_line_vld_cnt == i_conf_inputrstcnt);
+
+always @(posedge clk) begin
+    if (rst) begin
+        psum_line_vld_cnt <= 0;
+    end
+    else if (o_psum_kn0_val) begin
+        psum_line_vld_cnt <= (psum_line_vld_cnt_max_val) ? 0 : psum_line_vld_cnt + 1'b1;
+    end
+end
+
+assign o_psum_end = psum_line_vld_cnt_max_val;
 
 //// Control logic
 wire                    enb;
