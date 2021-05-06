@@ -45,7 +45,6 @@ module line_kcpe_conv2d_engine(
     o_psum_kn3_val,
     o_psum_end,
     i_conf_ctrl,
-    i_conf_weightinterval,
     i_conf_kernelshape,
     i_conf_inputshape,
     i_conf_inputrstcnt
@@ -94,7 +93,6 @@ output wire                               o_psum_end;
 // output wire [REG_WIDTH * NUM_KCPE - 1 : 0]      err_psum_val;
 
 input  wire           [REG_WIDTH - 1 : 0] i_conf_ctrl;
-input  wire           [REG_WIDTH - 1 : 0] i_conf_weightinterval;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;

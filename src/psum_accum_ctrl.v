@@ -41,6 +41,9 @@ module psum_accum_ctrl(
     memctrl0_odat,
     memctrl0_oval,
 
+    i_conf_weightinterval,
+    i_conf_inputrstcnt,
+
     // memctrl1_wadd,
     // memctrl1_wren,
     // memctrl1_idat,
@@ -99,6 +102,10 @@ output                      memctrl0_rden;
 input  [DATA_WIDTH - 1 : 0] memctrl0_odat;
 input                       memctrl0_oval;
 
+input   [REG_WIDTH - 1 : 0] i_conf_weightinterval;
+input   [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
+
+
 // output [ADDR_WIDTH - 1 : 0] memctrl1_wadd;
 // output                      memctrl1_wren;
 // output [DATA_WIDTH - 1 : 0] memctrl1_idat;
@@ -126,6 +133,7 @@ input                       memctrl0_oval;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
+reg [ADDR_WIDTH - 1 : 0] base_addr;
 reg [ADDR_WIDTH - 1 : 0] rd_addr;
 reg [ADDR_WIDTH - 1 : 0] wr_addr;
 reg                      wr_enab;
@@ -133,9 +141,34 @@ reg [ADDR_WIDTH - 1 : 0] addr_cache;
 reg  [BIT_WIDTH - 1 : 0] psum_cache [NUM_KERNEL - 1 : 0];
 reg  [BIT_WIDTH - 1 : 0] wdat_cache [NUM_KERNEL - 1 : 0];
 
+reg  [REG_WIDTH - 1 : 0] psum_out_cnt;
+wire                     psum_out_cnt_max_vld;
+wire                     psum_out_cnt_premax_vld;
+
+assign psum_out_cnt_max_vld = (psum_out_cnt == i_conf_weightinterval);
+assign psum_out_cnt_premax_vld = (psum_out_cnt == (i_conf_weightinterval - 1'b1));
+
+always @(posedge clk) begin
+    if (rst) begin
+        psum_out_cnt <= 0;
+    end
+    else if (psum_kn0_vld) begin
+        psum_out_cnt <= (psum_out_cnt_max_vld) ? 0 : psum_out_cnt + 1'b1;
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        base_addr <= 0;
+    end
+    else if (psum_out_cnt_premax_vld) begin
+        base_addr <= base_addr + i_conf_inputrstcnt + 1'b1;
+    end
+end
+
 always @(posedge clk) begin
     if (rst | psum_knx_end) begin
-        rd_addr <= 0;
+        rd_addr <= base_addr;
     end
     else if (psum_kn0_vld) begin
         rd_addr <= rd_addr + 1'b1;

@@ -366,7 +366,7 @@ initial begin
     #20 rst <= 0;
 end
 
-localparam WEIGHT_INTERVAL = 50176 - 2 * 222;
+localparam WEIGHT_INTERVAL = 222 * 222 * 3 - 1;
 initial begin
     i_conf_ctrl <= 0;
     i_conf_cnt <= 0;

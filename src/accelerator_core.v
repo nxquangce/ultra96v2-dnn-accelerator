@@ -137,7 +137,6 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .o_psum_kn3_val         (accum_i_psum_val[3]),
     .o_psum_end             (accum_i_psum_end),
     .i_conf_ctrl            (i_conf_ctrl),
-    .i_conf_weightinterval  (i_conf_weightinterval),
     .i_conf_kernelshape     (i_conf_kernelshape),
     .i_conf_inputshape      (i_conf_inputshape),
     .i_conf_inputrstcnt     (i_conf_inputrstcnt)
@@ -161,7 +160,9 @@ psum_accum_ctrl psum_accum_ctrl_0(
     .memctrl0_radd          (memctrl0_radd),
     .memctrl0_rden          (memctrl0_rden),
     .memctrl0_odat          (memctrl0_odat),
-    .memctrl0_oval          (memctrl0_oval)
+    .memctrl0_oval          (memctrl0_oval),
+    .i_conf_weightinterval  (i_conf_weightinterval),
+    .i_conf_inputrstcnt     (i_conf_inputrstcnt)
     );
 
 
