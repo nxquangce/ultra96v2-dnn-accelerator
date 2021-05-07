@@ -48,8 +48,9 @@ module line_kcpe_conv2d_engine(
     i_conf_kernelshape,
     i_conf_inputshape,
     i_conf_inputrstcnt,
-    i_conf_layerdonecnt,
-    i_conf_kernelsize
+    i_conf_outputsize,
+    i_conf_kernelsize,
+    o_done
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -98,8 +99,9 @@ input  wire           [REG_WIDTH - 1 : 0] i_conf_ctrl;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
-input  wire           [REG_WIDTH - 1 : 0] i_conf_layerdonecnt;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_outputsize;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelsize;
+output wire                               o_done;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -366,7 +368,7 @@ assign o_psum_kn1_val = router_kn1_val & ~invalid_knx_val;
 assign o_psum_kn2_val = router_kn2_val & ~invalid_knx_val;
 assign o_psum_kn3_val = router_kn3_val & ~invalid_knx_val;
 
-assign psum_line_vld_cnt_max_val = (psum_line_vld_cnt == i_conf_inputrstcnt);
+assign psum_line_vld_cnt_max_val = (psum_line_vld_cnt == i_conf_outputsize);
 
 always @(posedge clk) begin
     if (rst) begin
@@ -512,6 +514,8 @@ always @(posedge clk) begin
         done <= 1'b1;
     end
 end
+
+assign o_done = done;
 
 //////////////////////////////////////////////////////////////////////////////////
 // Error monitor

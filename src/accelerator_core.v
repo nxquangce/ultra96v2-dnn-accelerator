@@ -46,7 +46,7 @@ module accelerator_core(
     memctrl0_odat,
     memctrl0_oval,
     i_conf_ctrl,
-    i_conf_layerdonecnt,
+    i_conf_outputsize,
     i_conf_kernelsize,
     i_conf_weightinterval,
     i_conf_kernelshape,
@@ -97,7 +97,7 @@ output wire                               memctrl0_rden;
 input  wire          [DATA_WIDTH - 1 : 0] memctrl0_odat;
 input  wire                               memctrl0_oval;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_ctrl;
-input  wire           [REG_WIDTH - 1 : 0] i_conf_layerdonecnt;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_outputsize;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelsize;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_weightinterval;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelshape;
@@ -115,9 +115,17 @@ wire [NUM_KERNEL - 1 : 0] accum_i_psum_end;
 // wire [(BIT_WIDTH * NUM_KERNEL) - 1 : 0] engine_i_psum;
 // wire                                    engine_i_psum_val;
 
+wire                      rst_soft;
+wire                      rst_p;
+wire                      kcpe_done;
+wire                      psum_done;
+
+assign rst_soft = i_conf_ctrl[1];
+assign rst_p = rst | rst_soft;
+
 line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .o_data_req             (o_data_req),
     .o_data_end             (o_data_end),
     .i_data                 (i_data),
@@ -137,16 +145,17 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .o_psum_kn3_val         (accum_i_psum_val[3]),
     .o_psum_end             (accum_i_psum_end),
     .i_conf_ctrl            (i_conf_ctrl),
-    .i_conf_layerdonecnt    (i_conf_layerdonecnt),
     .i_conf_kernelshape     (i_conf_kernelshape),
     .i_conf_inputshape      (i_conf_inputshape),
     .i_conf_inputrstcnt     (i_conf_inputrstcnt),
-    .i_conf_kernelsize      (i_conf_kernelsize)
+    .i_conf_outputsize      (i_conf_outputsize),
+    .i_conf_kernelsize      (i_conf_kernelsize),
+    .o_done                 (kcpe_done)
     );
 
 psum_accum_ctrl psum_accum_ctrl_0(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .psum_kn0_dat           (accum_i_psum[0]),
     .psum_kn0_vld           (accum_i_psum_val[0]),
     .psum_kn1_dat           (accum_i_psum[1]),
@@ -164,11 +173,23 @@ psum_accum_ctrl psum_accum_ctrl_0(
     .memctrl0_odat          (memctrl0_odat),
     .memctrl0_oval          (memctrl0_oval),
     .i_conf_weightinterval  (i_conf_weightinterval),
-    .i_conf_inputrstcnt     (i_conf_inputrstcnt)
+    .i_conf_outputsize      (i_conf_outputsize),
+    .i_conf_kernelshape     (i_conf_kernelshape),
+    .o_done                 (psum_done)
     );
 
 
 // Control logic
+reg [REG_WIDTH - 1 : 0] conf_status;
+
+always @(posedge clk) begin
+    if (rst) begin
+        conf_status <= 0;
+    end
+    else begin
+        conf_status <= {30'b0, kcpe_done, psum_done};
+    end
+end
 
 
 endmodule

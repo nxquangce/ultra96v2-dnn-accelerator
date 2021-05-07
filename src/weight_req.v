@@ -75,7 +75,7 @@ reg           [DAT_WIDTH - 1 : 0] odata_reg_p0 [NUM_KERNEL - 1 : 0];
 reg      [MEM_DATA_WIDTH - 1 : 0] cache_reg_p1 [NUM_KERNEL - 1 : 0];
 reg                       [1 : 0] state;
 reg                       [1 : 0] next_state;
-reg                               vld_reg;
+reg                               req_reg;
 wire [MEM_DATA_WIDTH * 2 - 1 : 0] memx_dat_concat [NUM_KERNEL - 1 : 0];
 wire                              vld_stall;
 wire                              req_stall;
@@ -112,6 +112,15 @@ always @(posedge clk) begin
         if (mem3_oval) begin
             cache_reg_p1[3] <= mem3_odat;
         end
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        req_reg <= 0;
+    end
+    else begin
+        req_reg <= i_req;
     end
 end
 
@@ -177,6 +186,6 @@ always @(*) begin
 end
 
 assign o_dat = {odata_reg_p0[3], odata_reg_p0[2], odata_reg_p0[1], odata_reg_p0[0]};
-assign o_vld = mem0_oval | (i_req & vld_stall);
+assign o_vld = mem0_oval | (req_reg & vld_stall);
 
 endmodule

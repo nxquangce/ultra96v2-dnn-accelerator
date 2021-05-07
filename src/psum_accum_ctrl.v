@@ -42,7 +42,9 @@ module psum_accum_ctrl(
     memctrl0_oval,
 
     i_conf_weightinterval,
-    i_conf_inputrstcnt,
+    i_conf_outputsize,
+    i_conf_kernelshape,
+    o_done,
 
     // memctrl1_wadd,
     // memctrl1_wren,
@@ -103,7 +105,9 @@ input  [DATA_WIDTH - 1 : 0] memctrl0_odat;
 input                       memctrl0_oval;
 
 input   [REG_WIDTH - 1 : 0] i_conf_weightinterval;
-input   [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
+input   [REG_WIDTH - 1 : 0] i_conf_outputsize;
+input   [REG_WIDTH - 1 : 0] i_conf_kernelshape;
+output                      o_done;
 
 
 // output [ADDR_WIDTH - 1 : 0] memctrl1_wadd;
@@ -162,7 +166,7 @@ always @(posedge clk) begin
         base_addr <= 0;
     end
     else if (psum_out_cnt_premax_vld) begin
-        base_addr <= base_addr + i_conf_inputrstcnt + 1'b1;
+        base_addr <= base_addr + i_conf_outputsize + 1'b1;
     end
 end
 
@@ -241,5 +245,43 @@ assign memctrl0_wren = wr_enab;
 // assign memctrl1_wren = wr_enab;
 // assign memctrl2_wren = wr_enab;
 // assign memctrl3_wren = wr_enab;
+
+// Status
+reg                     init;
+reg                     done;
+reg [REG_WIDTH - 1 : 0] kernel_done_cnt;
+wire                    kernel_done_cnt_max_vld;
+wire                    done_vld;
+
+assign kernel_done_cnt_max_vld = (kernel_done_cnt ==  i_conf_kernelshape[31 : 16]);
+assign done_vld = kernel_done_cnt_max_vld & psum_out_cnt_max_vld;
+
+always @(posedge clk) begin
+    if (rst) begin
+        kernel_done_cnt <= 0;
+    end if (psum_out_cnt_max_vld) begin
+        kernel_done_cnt <= (kernel_done_cnt_max_vld) ? 0 : kernel_done_cnt + 3'd4;
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        init <= 1;
+    end
+    else if (psum_kn0_vld) begin
+        init <= 0;
+    end
+end
+
+always @(posedge clk) begin
+    if (rst | init) begin
+        done <= 0;
+    end
+    else if (done_vld) begin
+        done <= 1'b1;
+    end
+end
+
+assign o_done = done;
 
 endmodule
