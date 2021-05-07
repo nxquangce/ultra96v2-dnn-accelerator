@@ -61,7 +61,7 @@ wire                                                  memctrl0_oval;
 
 reg [REG_WIDTH - 1 : 0]                               i_conf_ctrl;
 reg [REG_WIDTH - 1 : 0]                               i_conf_cnt;
-reg [REG_WIDTH - 1 : 0]                               i_conf_knx;
+reg [REG_WIDTH - 1 : 0]                               i_conf_kernelsize;
 reg [REG_WIDTH - 1 : 0]                               i_conf_weightinterval;
 reg [REG_WIDTH - 1 : 0]                               i_conf_kernelshape;
 reg [REG_WIDTH - 1 : 0]                               i_conf_inputshape;
@@ -94,8 +94,8 @@ accelerator_core uut(
     .memctrl0_odat          (memctrl0_odat),
     .memctrl0_oval          (memctrl0_oval),
     .i_conf_ctrl            (i_conf_ctrl),
-    .i_conf_cnt             (i_conf_cnt),
-    .i_conf_knx             (i_conf_knx),
+    // .i_conf_cnt             (i_conf_cnt),
+    .i_conf_kernelsize      (i_conf_kernelsize),
     .i_conf_weightinterval  (i_conf_weightinterval),
     .i_conf_kernelshape     (i_conf_kernelshape),
     .i_conf_inputshape      (i_conf_inputshape),
@@ -370,7 +370,7 @@ localparam WEIGHT_INTERVAL = 222 * 222 * 3 - 1;
 initial begin
     i_conf_ctrl <= 0;
     i_conf_cnt <= 0;
-    i_conf_knx <= 0;
+    i_conf_kernelsize <= 0;
     i_conf_weightinterval <= 0;
     i_conf_kernelshape <= 0;
     i_conf_inputshape <= 0;
@@ -379,7 +379,7 @@ initial begin
     #50 
     i_conf_ctrl <= 32'b1;
     i_conf_cnt <= 32'd50176;
-    i_conf_knx <= 32'hffffffff;
+    i_conf_kernelsize <= 32'd9;
     i_conf_weightinterval <= WEIGHT_INTERVAL;
     i_conf_kernelshape <= 32'h0020_0333;
     i_conf_inputshape <= 32'h0001_03e0;

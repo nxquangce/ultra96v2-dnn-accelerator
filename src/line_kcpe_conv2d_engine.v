@@ -47,7 +47,9 @@ module line_kcpe_conv2d_engine(
     i_conf_ctrl,
     i_conf_kernelshape,
     i_conf_inputshape,
-    i_conf_inputrstcnt
+    i_conf_inputrstcnt,
+    i_conf_layerdonecnt,
+    i_conf_kernelsize
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -96,6 +98,8 @@ input  wire           [REG_WIDTH - 1 : 0] i_conf_ctrl;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_layerdonecnt;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelsize;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -408,14 +412,14 @@ always @(posedge clk) begin
     end
 end
 
-assign o_data_req = odata_req_reg;
+assign o_data_req = odata_req_reg & ~done;
 assign o_data_end = odata_req_cnt_max_vld;
 
 always @(posedge clk) begin
     if (rst) begin
         init <= 1'b1;
     end
-    else if (buffer_o_data_full) begin
+    else if (buffer_o_weight_full) begin
         init <= 1'b0;
     end
 end
@@ -461,14 +465,53 @@ always @(posedge clk) begin
     if (rst | weight_line_req_cnt_max_vld) begin
         weight_line_req_reg <= 1'b0;
     end
-    else if (!weight_init | odata_req_cnt_premax_vld) begin
+    else if (enb & (!weight_init | odata_req_cnt_premax_vld)) begin
         weight_line_req_reg <= 1'b1;
     end
 end
 
-assign o_weight_req = weight_line_req_reg;
+assign o_weight_req = weight_line_req_reg & ~done;
 assign i_weight_req = buffer_o_weight_full;
 
+// Done control
+reg                                 done;
+reg                         [7 : 0] weight_done_cnt;
+wire                                weight_done_cnt_max_vld;
+reg             [REG_WIDTH - 1 : 0] kernel_done_cnt;
+wire                                kernel_done_cnt_max_vld;
+wire                                kernel_end;
+
+assign weight_done_cnt_max_vld = (weight_done_cnt == i_conf_kernelsize[7 : 0]);
+
+always @(posedge clk) begin
+    if (rst) begin
+        weight_done_cnt <= 0;
+    end
+    else if (i_weight_req) begin
+        weight_done_cnt <= (weight_done_cnt_max_vld) ? 8'd3 : weight_done_cnt + 2'd3;
+    end
+end
+
+
+assign kernel_done_cnt_max_vld = (kernel_done_cnt == i_conf_kernelshape[31 : 16]);
+assign kernel_end = weight_done_cnt_max_vld & o_data_end;
+
+always @(posedge clk) begin
+    if (rst) begin
+        kernel_done_cnt <= 0;
+    end if (kernel_end) begin
+        kernel_done_cnt <= (kernel_done_cnt_max_vld) ? 0 : kernel_done_cnt + 3'd4;
+    end
+end
+
+always @(posedge clk) begin
+    if (rst | init) begin
+        done <= 0;
+    end
+    else if (kernel_done_cnt_max_vld & kernel_end) begin
+        done <= 1'b1;
+    end
+end
 
 //////////////////////////////////////////////////////////////////////////////////
 // Error monitor

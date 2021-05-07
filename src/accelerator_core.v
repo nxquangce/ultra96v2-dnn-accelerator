@@ -46,8 +46,8 @@ module accelerator_core(
     memctrl0_odat,
     memctrl0_oval,
     i_conf_ctrl,
-    i_conf_cnt,
-    i_conf_knx,
+    i_conf_layerdonecnt,
+    i_conf_kernelsize,
     i_conf_weightinterval,
     i_conf_kernelshape,
     i_conf_inputshape,
@@ -97,8 +97,8 @@ output wire                               memctrl0_rden;
 input  wire          [DATA_WIDTH - 1 : 0] memctrl0_odat;
 input  wire                               memctrl0_oval;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_ctrl;
-input  wire           [REG_WIDTH - 1 : 0] i_conf_cnt;
-input  wire           [REG_WIDTH - 1 : 0] i_conf_knx;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_layerdonecnt;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelsize;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_weightinterval;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputshape;
@@ -137,9 +137,11 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .o_psum_kn3_val         (accum_i_psum_val[3]),
     .o_psum_end             (accum_i_psum_end),
     .i_conf_ctrl            (i_conf_ctrl),
+    .i_conf_layerdonecnt    (i_conf_layerdonecnt),
     .i_conf_kernelshape     (i_conf_kernelshape),
     .i_conf_inputshape      (i_conf_inputshape),
-    .i_conf_inputrstcnt     (i_conf_inputrstcnt)
+    .i_conf_inputrstcnt     (i_conf_inputrstcnt),
+    .i_conf_kernelsize      (i_conf_kernelsize)
     );
 
 psum_accum_ctrl psum_accum_ctrl_0(
