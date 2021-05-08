@@ -386,6 +386,9 @@ wire                    enb;
 reg                     init;
 reg                     odata_req_reg;
 reg                     idata_req_reg;
+reg [REG_WIDTH - 1 : 0] idata_req_cnt;
+wire                    idata_req_cnt_max_vld;
+wire                    idata_end;
 reg [REG_WIDTH - 1 : 0] odata_req_cnt;
 wire                    odata_req_cnt_max_vld;
 wire                    odata_req_cnt_premax_vld;
@@ -409,7 +412,7 @@ always @(posedge clk) begin
     if (rst) begin
         odata_req_cnt <= 0;
     end
-    else if (i_data_req) begin
+    else if (o_data_req) begin
         odata_req_cnt <= (odata_req_cnt_max_vld) ? 0 : odata_req_cnt + 1'b1;
     end
 end
@@ -432,6 +435,18 @@ always @(posedge clk) begin
     end
     else if (buffer_o_data_full | i_weight_req) begin
         idata_req_reg <= 1'b1;
+    end
+end
+
+assign idata_req_cnt_max_vld = (idata_req_cnt == i_conf_inputrstcnt);
+assign idata_end = idata_req_cnt_max_vld;
+
+always @(posedge clk) begin
+    if (rst) begin
+        idata_req_cnt <= 0;
+    end
+    else if (i_data_req) begin
+        idata_req_cnt <= (idata_req_cnt_max_vld) ? 0 : idata_req_cnt + 1'b1;
     end
 end
 
@@ -496,7 +511,7 @@ end
 
 
 assign kernel_done_cnt_max_vld = (kernel_done_cnt == (i_conf_kernelshape[31 : 16] - 3'd4));
-assign kernel_end = weight_done_cnt_max_vld & o_data_end;
+assign kernel_end = weight_done_cnt_max_vld & idata_end;
 
 always @(posedge clk) begin
     if (rst | init) begin
