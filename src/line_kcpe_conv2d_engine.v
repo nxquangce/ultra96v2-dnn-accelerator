@@ -409,7 +409,7 @@ always @(posedge clk) begin
     if (rst) begin
         odata_req_cnt <= 0;
     end
-    else if (o_data_req) begin
+    else if (i_data_req) begin
         odata_req_cnt <= (odata_req_cnt_max_vld) ? 0 : odata_req_cnt + 1'b1;
     end
 end
@@ -495,11 +495,11 @@ always @(posedge clk) begin
 end
 
 
-assign kernel_done_cnt_max_vld = (kernel_done_cnt == i_conf_kernelshape[31 : 16]);
+assign kernel_done_cnt_max_vld = (kernel_done_cnt == (i_conf_kernelshape[31 : 16] - 3'd4));
 assign kernel_end = weight_done_cnt_max_vld & o_data_end;
 
 always @(posedge clk) begin
-    if (rst) begin
+    if (rst | init) begin
         kernel_done_cnt <= 0;
     end if (kernel_end) begin
         kernel_done_cnt <= (kernel_done_cnt_max_vld) ? 0 : kernel_done_cnt + 3'd4;
