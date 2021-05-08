@@ -133,14 +133,17 @@ always @(posedge clk) begin
                                      + (i_psum_kn1 & {BIT_WIDTH{accum_perkn_enb[1][0]}})
                                      + (i_psum_kn2 & {BIT_WIDTH{accum_perkn_enb[2][0]}})
                                      + (i_psum_kn3 & {BIT_WIDTH{accum_perkn_enb[3][0]}});
+
         accum_reg[1] <= accum_reg[1] + (i_psum_kn0 & {BIT_WIDTH{accum_perkn_enb[0][1]}}) 
                                      + (i_psum_kn1 & {BIT_WIDTH{accum_perkn_enb[1][1]}})
                                      + (i_psum_kn2 & {BIT_WIDTH{accum_perkn_enb[2][1]}})
                                      + (i_psum_kn3 & {BIT_WIDTH{accum_perkn_enb[3][1]}});
+
         accum_reg[2] <= accum_reg[2] + (i_psum_kn0 & {BIT_WIDTH{accum_perkn_enb[0][2]}}) 
                                      + (i_psum_kn1 & {BIT_WIDTH{accum_perkn_enb[1][2]}})
                                      + (i_psum_kn2 & {BIT_WIDTH{accum_perkn_enb[2][2]}})
                                      + (i_psum_kn3 & {BIT_WIDTH{accum_perkn_enb[3][2]}});
+
         accum_reg[3] <= accum_reg[3] + (i_psum_kn0 & {BIT_WIDTH{accum_perkn_enb[0][3]}}) 
                                      + (i_psum_kn1 & {BIT_WIDTH{accum_perkn_enb[1][3]}})
                                      + (i_psum_kn2 & {BIT_WIDTH{accum_perkn_enb[2][3]}})

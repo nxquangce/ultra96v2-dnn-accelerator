@@ -121,7 +121,7 @@ generate
                 .i_psum         (o_psum_kn[idxK][idxC - 1]),
                 // .i_psum_val     (i_psum_val),
                 .o_psum         (o_psum_kn[idxK][idxC]),
-                .o_psum_val     (o_psum_val_kc[idxK])
+                .o_psum_val     (o_psum_val_kc[idxK][idxC])
                 );
         end
     end

@@ -22,6 +22,7 @@
 
 module bram_ctrl(
     clk,
+    rst,
     addr,
     wren,
     idat,
@@ -31,9 +32,9 @@ module bram_ctrl(
     mem_addr,
     mem_idat,
     mem_odat,
+    mem_wren,
     mem_enb,
-    mem_rst,
-    mem_wen
+    mem_rst
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -47,6 +48,7 @@ localparam NUM_BYTE     = 4;
 // Port declarations
 // User side
 input                      clk;
+input                      rst;
 input [ADDR_WIDTH - 1 : 0] addr;
 input                      wren;
 input [DAT_WIDTH - 1 : 0]  idat;
@@ -57,20 +59,31 @@ output                     oval;
 output [ADDR_WIDTH - 1 : 0] mem_addr;
 output [DAT_WIDTH - 1 : 0]  mem_idat;
 input  [DAT_WIDTH - 1 : 0]  mem_odat;
+output [NUM_BYTE - 1 : 0]   mem_wren;
 output                      mem_enb;
 output                      mem_rst;
-output [NUM_BYTE - 1 : 0]   mem_wen;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
-reg odat_val_reg;
+reg [DAT_WIDTH - 1 : 0] odat_reg; 
+reg                     odat_val_reg;
 
 assign mem_enb = 1'b1;
 assign mem_rst = 1'b0;
 assign mem_addr = addr;
-assign mem_wen = {4{wren}};
+assign mem_wren = {4{wren}};
+assign mem_idat = idat;
 assign oval = odat_val_reg;
-assign odat = mem_odat;
+assign odat = (oval) ? mem_odat : odat_reg;
+
+always @(posedge clk) begin
+    if (rst) begin
+        odat_reg <= 0;
+    end
+    if (oval) begin
+        odat_reg <= mem_odat;
+    end
+end
 
 always @(posedge clk) begin
     odat_val_reg <= rden;

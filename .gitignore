@@ -7,3 +7,4 @@ xsim.dir/
 *.backup.jou
 *.backup.log
 *.upgrade_log
+*.wcfg
