@@ -40,6 +40,7 @@ module config_regfile #
     output [C_S_AXI_DATA_WIDTH - 1 : 0] reg4,
     output [C_S_AXI_DATA_WIDTH - 1 : 0] reg5,
     output [C_S_AXI_DATA_WIDTH - 1 : 0] reg6,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg0,
 
 
     // User ports ends
@@ -433,6 +434,7 @@ begin
         3'h4   : reg_data_out <= slv_reg4;
         3'h5   : reg_data_out <= slv_reg5;
         3'h6   : reg_data_out <= slv_reg6;
+        3'h7   : reg_data_out <= ireg0;
         default : reg_data_out <= 0;
         endcase
 end

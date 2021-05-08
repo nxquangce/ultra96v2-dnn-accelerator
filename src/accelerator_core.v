@@ -51,7 +51,8 @@ module accelerator_core(
     i_conf_weightinterval,
     i_conf_kernelshape,
     i_conf_inputshape,
-    i_conf_inputrstcnt
+    i_conf_inputrstcnt,
+    o_conf_status
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -67,8 +68,8 @@ parameter NUM_RDATA     = 3;
 parameter ADDR_WIDTH    = 32;
 parameter DATA_WIDTH    = 32;
 
-localparam IN_INPUT_DAT_WIDTH  = BIT_WIDTH * NUM_CHANNEL;
-localparam IN_WEIGHT_DAT_WIDTH = BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL;
+parameter IN_INPUT_DAT_WIDTH  = BIT_WIDTH * NUM_CHANNEL;
+parameter IN_WEIGHT_DAT_WIDTH = BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
@@ -103,6 +104,7 @@ input  wire           [REG_WIDTH - 1 : 0] i_conf_weightinterval;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
+output wire           [REG_WIDTH - 1 : 0] o_conf_status;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -191,5 +193,6 @@ always @(posedge clk) begin
     end
 end
 
+assign o_conf_status = conf_status;
 
 endmodule
