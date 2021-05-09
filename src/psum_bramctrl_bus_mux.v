@@ -96,6 +96,8 @@ reg   [NUM_BYTE - 1 : 0] wea_reg;
 reg [DATA_WIDTH - 1 : 0] bram_rddata_a_reg;
 reg [DATA_WIDTH - 1 : 0] mem_odat_reg;
 
+assign psenb = i_conf_ctrl[2];
+
 always @(*) begin
     if (psenb) begin
         addra_reg = bram_addr_a;
@@ -106,7 +108,7 @@ always @(*) begin
         wea_reg   = bram_we_a;
 
         bram_rddata_a_reg = douta;
-        mem_odat_reg = 0;
+        mem_odat_reg      = 0;
     end
     else begin
         addra_reg = mem_addr;
@@ -117,7 +119,7 @@ always @(*) begin
         wea_reg   = mem_rst;
 
         bram_rddata_a_reg = 0;
-        mem_odat_reg  = douta;
+        mem_odat_reg      = douta;
     end
 end
 

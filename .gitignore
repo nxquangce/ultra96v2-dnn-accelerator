@@ -1,5 +1,6 @@
 ultra96v2**
 xsim.dir/
+outputs/
 *.xpr
 *.pb
 *.jou
@@ -8,3 +9,4 @@ xsim.dir/
 *.backup.log
 *.upgrade_log
 *.wcfg
+*.sh
