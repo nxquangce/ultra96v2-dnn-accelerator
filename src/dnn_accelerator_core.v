@@ -275,12 +275,12 @@ weight_req weight_req_inst(
     .memx_addr              (weightreq_memx_addr),
     .memx_rden              (weightreq_memx_rden),
     .mem0_odat              (weightreq_mem0_odat),
-    .mem0_oval              (weightreq_mem1_odat),
-    .mem1_odat              (weightreq_mem2_odat),
-    .mem1_oval              (weightreq_mem3_odat),
-    .mem2_odat              (weightreq_mem0_oval),
-    .mem2_oval              (weightreq_mem1_oval),
-    .mem3_odat              (weightreq_mem2_oval),
+    .mem1_odat              (weightreq_mem1_odat),
+    .mem2_odat              (weightreq_mem2_odat),
+    .mem3_odat              (weightreq_mem3_odat),
+    .mem0_oval              (weightreq_mem0_oval),
+    .mem1_oval              (weightreq_mem1_oval),
+    .mem2_oval              (weightreq_mem2_oval),
     .mem3_oval              (weightreq_mem3_oval)
     );
 

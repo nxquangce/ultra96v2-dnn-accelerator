@@ -123,7 +123,7 @@ wire                                   buffer_o_data_full;
 wire                                   buffer_o_data_empty;
 
 // Weight signals
-wire                                                i_weight_req;
+reg                                                 i_weight_req;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0]              i_weight_kn0;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0]              i_weight_kn1;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0]              i_weight_kn2;
@@ -430,10 +430,10 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (rst | o_data_end) begin
+    if (rst | idata_end) begin
         idata_req_reg <= 1'b0;
     end
-    else if (buffer_o_data_full | i_weight_req) begin
+    else if (i_weight_req) begin
         idata_req_reg <= 1'b1;
     end
 end
@@ -488,7 +488,18 @@ always @(posedge clk) begin
 end
 
 assign o_weight_req = weight_line_req_reg & ~done;
-assign i_weight_req = buffer_o_weight_full;
+
+always @(posedge clk) begin
+    if (rst) begin
+        i_weight_req <= 0;
+    end
+    if (init) begin
+        i_weight_req <= buffer_o_weight_full;
+    end
+    else begin
+        i_weight_req <= idata_end & buffer_o_weight_full;
+    end
+end
 
 // Done control
 reg                                 done;

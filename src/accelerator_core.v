@@ -110,7 +110,7 @@ output wire           [REG_WIDTH - 1 : 0] o_conf_status;
 // Local logic and instantiation
 wire  [BIT_WIDTH - 1 : 0] accum_i_psum [NUM_KERNEL - 1 : 0];
 wire [NUM_KERNEL - 1 : 0] accum_i_psum_val;
-wire [NUM_KERNEL - 1 : 0] accum_i_psum_end;
+wire                      accum_i_psum_end;
 // wire [BIT_WIDTH - 1 : 0]                accum_o_psum [NUM_KERNEL - 1 : 0];
 // wire [NUM_KERNEL - 1 : 0]               accum_o_psum_val;
 

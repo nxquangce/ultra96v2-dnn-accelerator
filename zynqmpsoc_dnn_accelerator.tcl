@@ -372,6 +372,10 @@ proc create_root_design { parentCell } {
      return 1
    }
   
+  set_property -dict [ list \
+   CONFIG.POLARITY {ACTIVE_HIGH} \
+ ] [get_bd_pins /dnn_accelerator_core_0/rst]
+
   # Create instance: proc_sys_reset_0, and set properties
   set proc_sys_reset_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 proc_sys_reset_0 ]
 
@@ -1901,7 +1905,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net dnn_accelerator_core_0_mem_wren_5 [get_bd_pins dnn_accelerator_core_0/mem_wren_5] [get_bd_pins psum_bramctrl_bus_mux_0/mem_wren]
   connect_bd_net -net dnn_accelerator_core_0_mem_wren_6 [get_bd_pins blk_mem_gen_5/web] [get_bd_pins dnn_accelerator_core_0/mem_wren_6]
   connect_bd_net -net dnn_accelerator_core_0_o_conf_status [get_bd_pins config_regfile_0/ireg0] [get_bd_pins dnn_accelerator_core_0/o_conf_status]
-  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins dnn_accelerator_core_0/rst] [get_bd_pins proc_sys_reset_0/peripheral_aresetn]
+  connect_bd_net -net proc_sys_reset_0_peripheral_reset [get_bd_pins dnn_accelerator_core_0/rst] [get_bd_pins proc_sys_reset_0/peripheral_reset]
   connect_bd_net -net psum_bramctrl_bus_mux_0_addra [get_bd_pins blk_mem_gen_5/addra] [get_bd_pins psum_bramctrl_bus_mux_0/addra]
   connect_bd_net -net psum_bramctrl_bus_mux_0_bram_rddata_a [get_bd_pins axi_bram_ctrl_5/bram_rddata_a] [get_bd_pins psum_bramctrl_bus_mux_0/bram_rddata_a]
   connect_bd_net -net psum_bramctrl_bus_mux_0_clka [get_bd_pins blk_mem_gen_5/clka] [get_bd_pins psum_bramctrl_bus_mux_0/clka]
