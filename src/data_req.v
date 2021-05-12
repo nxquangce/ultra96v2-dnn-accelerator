@@ -55,6 +55,8 @@ input   [REG_WIDTH - 1 : 0] i_conf_kernelshape;
 reg        [ADDR_WIDTH - 1 : 0] addr_reg;
 reg [KERNEL_SIZE_WIDTH - 1 : 0] knlinex_cnt;
 wire                            knlinex_cnt_max_vld;
+reg        [ADDR_WIDTH - 1 : 0] base_addr_1;
+reg        [ADDR_WIDTH - 1 : 0] base_addr_2;
 
 assign knlinex_cnt_max_vld = (knlinex_cnt == (i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0] - 1'b1));
 
@@ -68,13 +70,18 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
+    base_addr_1 <= (((i_conf_inputshape[7:0] << 1) + i_conf_inputshape[7:0]) >> 2) - 1'b1;
+    base_addr_2 <= ((((i_conf_inputshape[7:0] << 1) << 1) + (i_conf_inputshape[7:0] << 1)) >> 2) - 1'b1;
+end
+
+always @(posedge clk) begin
     if (rst) begin
         addr_reg <= 0;
     end
     else if (i_end) begin
         case (knlinex_cnt)
-            2'b00: addr_reg <= i_conf_inputshape[7:0];
-            2'b01: addr_reg <= i_conf_inputshape[7:0] << 1;
+            2'b00: addr_reg <= base_addr_1;
+            2'b01: addr_reg <= base_addr_2;
             default: addr_reg <= 0;
         endcase
     end

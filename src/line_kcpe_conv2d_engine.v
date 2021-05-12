@@ -418,7 +418,7 @@ always @(posedge clk) begin
 end
 
 assign o_data_req = odata_req_reg & ~done;
-assign o_data_end = odata_req_cnt_max_vld;
+assign o_data_end = odata_req_cnt_max_vld & ~init;
 
 always @(posedge clk) begin
     if (rst) begin

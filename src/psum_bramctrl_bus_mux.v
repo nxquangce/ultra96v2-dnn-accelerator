@@ -84,7 +84,7 @@ output   [NUM_BYTE - 1 : 0] wea;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
-wire psenb;
+reg psenb;
 
 reg [ADDR_WIDTH - 1 : 0] addra_reg;
 reg                      clka_reg;
@@ -96,7 +96,10 @@ reg   [NUM_BYTE - 1 : 0] wea_reg;
 reg [DATA_WIDTH - 1 : 0] bram_rddata_a_reg;
 reg [DATA_WIDTH - 1 : 0] mem_odat_reg;
 
-assign psenb = i_conf_ctrl[2];
+// assign psenb = i_conf_ctrl[2];
+always @(posedge clk) begin
+    psenb <= i_conf_ctrl[2];
+end
 
 always @(*) begin
     if (psenb) begin
