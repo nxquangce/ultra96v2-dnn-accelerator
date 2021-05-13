@@ -50,7 +50,14 @@ module line_kcpe_conv2d_engine(
     i_conf_inputrstcnt,
     i_conf_outputsize,
     i_conf_kernelsize,
-    o_done
+    o_done,
+    dbg_linekcpe_valid_knx_cnt,
+    dbg_linekcpe_psum_line_vld_cnt,
+    dbg_linekcpe_idata_req_cnt,
+    dbg_linekcpe_odata_req_cnt,
+    dbg_linekcpe_weight_line_req_cnt,
+    dbg_linekcpe_weight_done_cnt,
+    dbg_linekcpe_kernel_done_cnt,
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,6 +109,15 @@ input  wire           [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_outputsize;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelsize;
 output wire                               o_done;
+
+// Debug
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_valid_knx_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_psum_line_vld_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_idata_req_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_odata_req_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_line_req_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_done_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_kernel_done_cnt;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -545,5 +561,13 @@ assign o_done = done;
 
 //////////////////////////////////////////////////////////////////////////////////
 // Error monitor
+
+assign dbg_linekcpe_valid_knx_cnt = {24'b0, valid_knx_cnt};
+assign dbg_linekcpe_psum_line_vld_cnt = psum_line_vld_cnt;
+assign dbg_linekcpe_idata_req_cnt = idata_req_cnt;
+assign dbg_linekcpe_odata_req_cnt = odata_req_cnt;
+assign dbg_linekcpe_weight_line_req_cnt = {29'b0, weight_line_req_cnt};
+assign dbg_linekcpe_weight_done_cnt = {24'b0, weight_done_cnt};
+assign dbg_linekcpe_kernel_done_cnt = kernel_done_cnt;
 
 endmodule

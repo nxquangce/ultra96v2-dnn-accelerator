@@ -46,6 +46,11 @@ module psum_accum_ctrl(
     i_conf_kernelshape,
     o_done,
 
+    dbg_psumacc_base_addr,
+    dbg_psumacc_psum_out_cnt,
+    dbg_psumacc_rd_addr,
+    dbg_psumacc_wr_addr,
+
     // memctrl1_wadd,
     // memctrl1_wren,
     // memctrl1_idat,
@@ -109,6 +114,10 @@ input   [REG_WIDTH - 1 : 0] i_conf_outputsize;
 input   [REG_WIDTH - 1 : 0] i_conf_kernelshape;
 output                      o_done;
 
+output  [REG_WIDTH - 1 : 0] dbg_psumacc_base_addr;
+output  [REG_WIDTH - 1 : 0] dbg_psumacc_psum_out_cnt;
+output  [REG_WIDTH - 1 : 0] dbg_psumacc_rd_addr;
+output  [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
 
 // output [ADDR_WIDTH - 1 : 0] memctrl1_wadd;
 // output                      memctrl1_wren;
@@ -283,5 +292,11 @@ always @(posedge clk) begin
 end
 
 assign o_done = done;
+
+// Debug
+assign dbg_psumacc_base_addr = base_addr;
+assign dbg_psumacc_psum_out_cnt = psum_out_cnt;
+assign dbg_psumacc_rd_addr = rd_addr;
+assign dbg_psumacc_wr_addr = wr_addr;
 
 endmodule

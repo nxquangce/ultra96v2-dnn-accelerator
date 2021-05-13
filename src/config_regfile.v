@@ -1,14 +1,14 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: Computer Engineering Lab - CSE - HCMUT
+// Engineer: Nguyen Xuan Quang
 // 
 // Create Date: 04/27/2021 02:38:11 PM
-// Design Name: 
+// Design Name: Config register file
 // Module Name: config_regfile
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
+// Project Name: ultra96v2-dnn-accelerator
+// Target Devices: ultra96v2
+// Tool Versions: 2018.2
 // Description: 
 // 
 // Dependencies: 
@@ -29,7 +29,7 @@ module config_regfile #
     // Width of S_AXI data bus
     parameter integer C_S_AXI_DATA_WIDTH	= 32,
     // Width of S_AXI address bus
-    parameter integer C_S_AXI_ADDR_WIDTH	= 4
+    parameter integer C_S_AXI_ADDR_WIDTH	= 7
 )
 (
     // Users to add ports here
@@ -41,7 +41,19 @@ module config_regfile #
     output [C_S_AXI_DATA_WIDTH - 1 : 0] reg5,
     output [C_S_AXI_DATA_WIDTH - 1 : 0] reg6,
     input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg0,
-
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg1,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg2,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg3,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg4,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg5,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg6,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg7,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg8,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg9,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg10,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg11,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg12,
+    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg13,
 
     // User ports ends
     // Do not modify the ports beyond this line
@@ -262,49 +274,49 @@ begin
     if (slv_reg_wren)
         begin
         case ( axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-            3'h0:
+            5'h0:
             for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                 if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                 // Respective byte enables are asserted as per write strobes 
                 // Slave register 0
                 slv_reg0[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                 end  
-            3'h1:
+            5'h1:
             for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                 if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                 // Respective byte enables are asserted as per write strobes 
                 // Slave register 1
                 slv_reg1[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                 end  
-            3'h2:
+            5'h2:
             for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                 if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                 // Respective byte enables are asserted as per write strobes 
                 // Slave register 2
                 slv_reg2[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                 end  
-            3'h3:
+            5'h3:
             for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                 if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                 // Respective byte enables are asserted as per write strobes 
                 // Slave register 3
                 slv_reg3[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                 end
-            3'h4:
+            5'h4:
             for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                 if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                 // Respective byte enables are asserted as per write strobes 
                 // Slave register 3
                 slv_reg4[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                 end
-            3'h5:
+            5'h5:
             for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                 if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                 // Respective byte enables are asserted as per write strobes 
                 // Slave register 3
                 slv_reg5[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                 end
-            3'h6:
+            5'h6:
             for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
                 if ( S_AXI_WSTRB[byte_index] == 1 ) begin
                 // Respective byte enables are asserted as per write strobes 
@@ -427,14 +439,28 @@ always @(*)
 begin
         // Address decoding for reading registers
         case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-        3'h0   : reg_data_out <= slv_reg0;
-        3'h1   : reg_data_out <= slv_reg1;
-        3'h2   : reg_data_out <= slv_reg2;
-        3'h3   : reg_data_out <= slv_reg3;
-        3'h4   : reg_data_out <= slv_reg4;
-        3'h5   : reg_data_out <= slv_reg5;
-        3'h6   : reg_data_out <= slv_reg6;
-        3'h7   : reg_data_out <= ireg0;
+        5'h0   : reg_data_out <= slv_reg0;
+        5'h1   : reg_data_out <= slv_reg1;
+        5'h2   : reg_data_out <= slv_reg2;
+        5'h3   : reg_data_out <= slv_reg3;
+        5'h4   : reg_data_out <= slv_reg4;
+        5'h5   : reg_data_out <= slv_reg5;
+        5'h6   : reg_data_out <= slv_reg6;
+        5'h7   : reg_data_out <= ireg0;
+        5'h8   : reg_data_out <= ireg1;
+        5'h9   : reg_data_out <= ireg2;
+        5'ha   : reg_data_out <= ireg3;
+        5'hb   : reg_data_out <= ireg4;
+        5'hc   : reg_data_out <= ireg5;
+        5'hd   : reg_data_out <= ireg6;
+        5'he   : reg_data_out <= ireg7;
+        5'hf   : reg_data_out <= ireg8;
+        5'h10  : reg_data_out <= ireg9;
+        5'h11  : reg_data_out <= ireg10;
+        5'h12  : reg_data_out <= ireg11;
+        5'h13  : reg_data_out <= ireg12;
+        5'h14  : reg_data_out <= ireg13;
+
         default : reg_data_out <= 0;
         endcase
 end

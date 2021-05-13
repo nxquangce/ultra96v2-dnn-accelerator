@@ -52,7 +52,19 @@ module accelerator_core(
     i_conf_kernelshape,
     i_conf_inputshape,
     i_conf_inputrstcnt,
-    o_conf_status
+    o_conf_status,
+    dbg_linekcpe_valid_knx_cnt,
+    dbg_linekcpe_psum_line_vld_cnt,
+    dbg_linekcpe_idata_req_cnt,
+    dbg_linekcpe_odata_req_cnt,
+    dbg_linekcpe_weight_line_req_cnt,
+    dbg_linekcpe_weight_done_cnt,
+    dbg_linekcpe_kernel_done_cnt,
+    dbg_psumacc_base_addr,
+    dbg_psumacc_psum_out_cnt,
+    dbg_psumacc_rd_addr,
+    dbg_psumacc_wr_addr,
+
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -106,6 +118,19 @@ input  wire           [REG_WIDTH - 1 : 0] i_conf_inputshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
 output wire           [REG_WIDTH - 1 : 0] o_conf_status;
 
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_valid_knx_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_psum_line_vld_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_idata_req_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_odata_req_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_line_req_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_done_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_kernel_done_cnt;
+
+output wire           [REG_WIDTH - 1 : 0] dbg_psumacc_base_addr;
+output wire           [REG_WIDTH - 1 : 0] dbg_psumacc_psum_out_cnt;
+output wire           [REG_WIDTH - 1 : 0] dbg_psumacc_rd_addr;
+output wire           [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
 wire  [BIT_WIDTH - 1 : 0] accum_i_psum [NUM_KERNEL - 1 : 0];
@@ -126,58 +151,69 @@ assign rst_soft = i_conf_ctrl[1];
 assign rst_p = rst | rst_soft;
 
 line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
-    .clk                    (clk),
-    .rst                    (rst_p),
-    .o_data_req             (o_data_req),
-    .o_data_end             (o_data_end),
-    .i_data                 (i_data),
-    .i_data_val             (i_data_val),
-    .o_weight_req           (o_weight_req),
-    .i_weight               (i_weight),
-    .i_weight_val           (i_weight_val),
-    // .i_psum                 (engine_i_psum),
-    // .i_psum_val             (engine_i_psum_val),
-    .o_psum_kn0             (accum_i_psum[0]),
-    .o_psum_kn0_val         (accum_i_psum_val[0]),
-    .o_psum_kn1             (accum_i_psum[1]),
-    .o_psum_kn1_val         (accum_i_psum_val[1]),
-    .o_psum_kn2             (accum_i_psum[2]),
-    .o_psum_kn2_val         (accum_i_psum_val[2]),
-    .o_psum_kn3             (accum_i_psum[3]),
-    .o_psum_kn3_val         (accum_i_psum_val[3]),
-    .o_psum_end             (accum_i_psum_end),
-    .i_conf_ctrl            (i_conf_ctrl),
-    .i_conf_kernelshape     (i_conf_kernelshape),
-    .i_conf_inputshape      (i_conf_inputshape),
-    .i_conf_inputrstcnt     (i_conf_inputrstcnt),
-    .i_conf_outputsize      (i_conf_outputsize),
-    .i_conf_kernelsize      (i_conf_kernelsize),
-    .o_done                 (kcpe_done)
+    .clk                                (clk),
+    .rst                                (rst_p),
+    .o_data_req                         (o_data_req),
+    .o_data_end                         (o_data_end),
+    .i_data                             (i_data),
+    .i_data_val                         (i_data_val),
+    .o_weight_req                       (o_weight_req),
+    .i_weight                           (i_weight),
+    .i_weight_val                       (i_weight_val),
+    // .i_psum                             (engine_i_psum),
+    // .i_psum_val                         (engine_i_psum_val),
+    .o_psum_kn0                         (accum_i_psum[0]),
+    .o_psum_kn0_val                     (accum_i_psum_val[0]),
+    .o_psum_kn1                         (accum_i_psum[1]),
+    .o_psum_kn1_val                     (accum_i_psum_val[1]),
+    .o_psum_kn2                         (accum_i_psum[2]),
+    .o_psum_kn2_val                     (accum_i_psum_val[2]),
+    .o_psum_kn3                         (accum_i_psum[3]),
+    .o_psum_kn3_val                     (accum_i_psum_val[3]),
+    .o_psum_end                         (accum_i_psum_end),
+    .i_conf_ctrl                        (i_conf_ctrl),
+    .i_conf_kernelshape                 (i_conf_kernelshape),
+    .i_conf_inputshape                  (i_conf_inputshape),
+    .i_conf_inputrstcnt                 (i_conf_inputrstcnt),
+    .i_conf_outputsize                  (i_conf_outputsize),
+    .i_conf_kernelsize                  (i_conf_kernelsize),
+    .o_done                             (kcpe_done),
+    .dbg_linekcpe_valid_knx_cnt         (dbg_linekcpe_valid_knx_cnt),
+    .dbg_linekcpe_psum_line_vld_cnt     (dbg_linekcpe_psum_line_vld_cnt),
+    .dbg_linekcpe_idata_req_cnt         (dbg_linekcpe_idata_req_cnt),
+    .dbg_linekcpe_odata_req_cnt         (dbg_linekcpe_odata_req_cnt),
+    .dbg_linekcpe_weight_line_req_cnt   (dbg_linekcpe_weight_line_req_cnt),
+    .dbg_linekcpe_weight_done_cnt       (dbg_linekcpe_weight_done_cnt),
+    .dbg_linekcpe_kernel_done_cnt       (dbg_linekcpe_kernel_done_cnt)
     );
 
 psum_accum_ctrl psum_accum_ctrl_0(
-    .clk                    (clk),
-    .rst                    (rst_p),
-    .psum_kn0_dat           (accum_i_psum[0]),
-    .psum_kn0_vld           (accum_i_psum_val[0]),
-    .psum_kn1_dat           (accum_i_psum[1]),
-    .psum_kn1_vld           (accum_i_psum_val[1]),
-    .psum_kn2_dat           (accum_i_psum[2]),
-    .psum_kn2_vld           (accum_i_psum_val[2]),
-    .psum_kn3_dat           (accum_i_psum[3]),
-    .psum_kn3_vld           (accum_i_psum_val[3]),
-    .psum_knx_end           (accum_i_psum_end),
-    .memctrl0_wadd          (memctrl0_wadd),
-    .memctrl0_wren          (memctrl0_wren),
-    .memctrl0_idat          (memctrl0_idat),
-    .memctrl0_radd          (memctrl0_radd),
-    .memctrl0_rden          (memctrl0_rden),
-    .memctrl0_odat          (memctrl0_odat),
-    .memctrl0_oval          (memctrl0_oval),
-    .i_conf_weightinterval  (i_conf_weightinterval),
-    .i_conf_outputsize      (i_conf_outputsize),
-    .i_conf_kernelshape     (i_conf_kernelshape),
-    .o_done                 (psum_done)
+    .clk                        (clk),
+    .rst                        (rst_p),
+    .psum_kn0_dat               (accum_i_psum[0]),
+    .psum_kn0_vld               (accum_i_psum_val[0]),
+    .psum_kn1_dat               (accum_i_psum[1]),
+    .psum_kn1_vld               (accum_i_psum_val[1]),
+    .psum_kn2_dat               (accum_i_psum[2]),
+    .psum_kn2_vld               (accum_i_psum_val[2]),
+    .psum_kn3_dat               (accum_i_psum[3]),
+    .psum_kn3_vld               (accum_i_psum_val[3]),
+    .psum_knx_end               (accum_i_psum_end),
+    .memctrl0_wadd              (memctrl0_wadd),
+    .memctrl0_wren              (memctrl0_wren),
+    .memctrl0_idat              (memctrl0_idat),
+    .memctrl0_radd              (memctrl0_radd),
+    .memctrl0_rden              (memctrl0_rden),
+    .memctrl0_odat              (memctrl0_odat),
+    .memctrl0_oval              (memctrl0_oval),
+    .i_conf_weightinterval      (i_conf_weightinterval),
+    .i_conf_outputsize          (i_conf_outputsize),
+    .i_conf_kernelshape         (i_conf_kernelshape),
+    .o_done                     (psum_done),
+    .dbg_psumacc_base_addr      (dbg_psumacc_base_addr),
+    .dbg_psumacc_psum_out_cnt   (dbg_psumacc_psum_out_cnt),
+    .dbg_psumacc_rd_addr        (dbg_psumacc_rd_addr),
+    .dbg_psumacc_wr_addr        (dbg_psumacc_wr_addr)
     );
 
 

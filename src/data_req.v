@@ -29,7 +29,9 @@ module data_req(
     o_addr,
     o_rden,
     i_conf_inputshape,
-    i_conf_kernelshape
+    i_conf_kernelshape,
+    dbg_datareq_knlinex_cnt,
+    dbg_datareq_addr_reg,
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +51,8 @@ output [ADDR_WIDTH - 1 : 0] o_addr;
 output                      o_rden;
 input   [REG_WIDTH - 1 : 0] i_conf_inputshape;
 input   [REG_WIDTH - 1 : 0] i_conf_kernelshape;
-
+output  [REG_WIDTH - 1 : 0] dbg_datareq_knlinex_cnt;
+output  [REG_WIDTH - 1 : 0] dbg_datareq_addr_reg;
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
 reg        [ADDR_WIDTH - 1 : 0] addr_reg;
@@ -92,5 +95,9 @@ end
 
 assign o_rden = i_req & ~i_stall;
 assign o_addr = addr_reg;
+
+// Debug
+assign dbg_datareq_knlinex_cnt = knlinex_cnt;
+assign dbg_datareq_addr_reg = addr_reg;
 
 endmodule
