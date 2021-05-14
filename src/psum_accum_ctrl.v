@@ -259,10 +259,16 @@ assign memctrl0_wren = wr_enab;
 reg                     init;
 reg                     done;
 reg [REG_WIDTH - 1 : 0] kernel_done_cnt;
+reg [REG_WIDTH - 1 : 0] kernel_done_cnt_max_reg;
 wire                    kernel_done_cnt_max_vld;
 wire                    done_vld;
 
-assign kernel_done_cnt_max_vld = (kernel_done_cnt ==  (i_conf_kernelshape[31 : 16] - 3'd4));
+// fix timming
+always @(posedge clk) begin
+    kernel_done_cnt_max_reg <= i_conf_kernelshape[31 : 16] - 3'd4;
+end
+
+assign kernel_done_cnt_max_vld = (kernel_done_cnt == kernel_done_cnt_max_reg);
 assign done_vld = kernel_done_cnt_max_vld & psum_out_cnt_max_vld;
 
 always @(posedge clk) begin

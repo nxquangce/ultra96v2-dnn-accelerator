@@ -42,6 +42,8 @@ module bram_ctrl(
 parameter DAT_WIDTH     = 32;
 parameter ADDR_WIDTH    = 32;
 
+parameter ADDR_MODE     = 0; 
+
 localparam NUM_BYTE     = 4;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,7 +72,7 @@ reg                     odat_val_reg;
 
 assign mem_enb = 1'b1;
 assign mem_rst = 1'b0;
-assign mem_addr = addr;
+assign mem_addr = addr << ADDR_MODE;
 assign mem_wren = {4{wren}};
 assign mem_idat = idat;
 assign oval = odat_val_reg;
