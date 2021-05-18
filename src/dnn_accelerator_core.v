@@ -73,27 +73,56 @@ module dnn_accelerator_core(
     mem_enb_6,
     mem_rst_6,
 
-    S_AXI_ACLK,
-    S_AXI_ARESETN,
-    S_AXI_AWADDR,
-    S_AXI_AWPROT,
-    S_AXI_AWVALID,
-    S_AXI_AWREADY,
-    S_AXI_WDATA,
-    S_AXI_WSTRB,
-    S_AXI_WVALID,
-    S_AXI_WREADY,
-    S_AXI_BRESP,
-    S_AXI_BVALID,
-    S_AXI_BREADY,
-    S_AXI_ARADDR,
-    S_AXI_ARPROT,
-    S_AXI_ARVALID,
-    S_AXI_ARREADY,
-    S_AXI_RDATA,
-    S_AXI_RRESP,
-    S_AXI_RVALID,
-    S_AXI_RREADY,
+    mem_addr_7,
+    mem_idat_7,
+    mem_odat_7,
+    mem_wren_7,
+    mem_enb_7,
+    mem_rst_7,
+
+    // S_AXI_ACLK,
+    // S_AXI_ARESETN,
+    // S_AXI_AWADDR,
+    // S_AXI_AWPROT,
+    // S_AXI_AWVALID,
+    // S_AXI_AWREADY,
+    // S_AXI_WDATA,
+    // S_AXI_WSTRB,
+    // S_AXI_WVALID,
+    // S_AXI_WREADY,
+    // S_AXI_BRESP,
+    // S_AXI_BVALID,
+    // S_AXI_BREADY,
+    // S_AXI_ARADDR,
+    // S_AXI_ARPROT,
+    // S_AXI_ARVALID,
+    // S_AXI_ARREADY,
+    // S_AXI_RDATA,
+    // S_AXI_RRESP,
+    // S_AXI_RVALID,
+    // S_AXI_RREADY,
+    i_conf_ctrl,
+    i_conf_outputsize,
+    i_conf_kernelsize,
+    i_conf_weightinterval,
+    i_conf_kernelshape,
+    i_conf_inputshape,
+    i_conf_inputrstcnt,
+    o_conf_status,
+    dbg_linekcpe_valid_knx_cnt,
+    dbg_linekcpe_psum_line_vld_cnt,
+    dbg_linekcpe_idata_req_cnt,
+    dbg_linekcpe_odata_req_cnt,
+    dbg_linekcpe_weight_line_req_cnt,
+    dbg_linekcpe_weight_done_cnt,
+    dbg_linekcpe_kernel_done_cnt,
+    dbg_psumacc_base_addr,
+    dbg_psumacc_psum_out_cnt,
+    dbg_psumacc_wr_addr,
+    dbg_psumacc_rd_addr,
+    dbg_datareq_knlinex_cnt,
+    dbg_datareq_addr_reg,
+
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -118,7 +147,7 @@ parameter IN_WEIGHT_DAT_WIDTH = BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL;
 // Width of S_AXI data bus
 parameter integer C_S_AXI_DATA_WIDTH    = 32;
 // Width of S_AXI address bus
-parameter integer C_S_AXI_ADDR_WIDTH    = 5;
+parameter integer C_S_AXI_ADDR_WIDTH    = 7;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
@@ -174,28 +203,35 @@ output   [NUM_BYTE - 1 : 0] mem_wren_6;
 output                      mem_enb_6;
 output                      mem_rst_6;
 
+output [ADDR_WIDTH - 1 : 0] mem_addr_7;
+output [DATA_WIDTH - 1 : 0] mem_idat_7;
+input  [DATA_WIDTH - 1 : 0] mem_odat_7;
+output   [NUM_BYTE - 1 : 0] mem_wren_7;
+output                      mem_enb_7;
+output                      mem_rst_7;
+
 // Config regfile AXI
-input  wire                                S_AXI_ACLK;
-input  wire                                S_AXI_ARESETN;
-input  wire     [C_S_AXI_ADDR_WIDTH-1 : 0] S_AXI_AWADDR;
-input  wire                        [2 : 0] S_AXI_AWPROT;
-input  wire                                S_AXI_AWVALID;
-output wire                                S_AXI_AWREADY;
-input  wire     [C_S_AXI_DATA_WIDTH-1 : 0] S_AXI_WDATA;
-input  wire [(C_S_AXI_DATA_WIDTH/8)-1 : 0] S_AXI_WSTRB;
-input  wire                                S_AXI_WVALID;
-output wire                                S_AXI_WREADY;
-output wire                        [1 : 0] S_AXI_BRESP;
-output wire                                S_AXI_BVALID;
-input  wire                                S_AXI_BREADY;
-input  wire     [C_S_AXI_ADDR_WIDTH-1 : 0] S_AXI_ARADDR;
-input  wire                        [2 : 0] S_AXI_ARPROT;
-input  wire                                S_AXI_ARVALID;
-output wire                                S_AXI_ARREADY;
-output wire     [C_S_AXI_DATA_WIDTH-1 : 0] S_AXI_RDATA;
-output wire                        [1 : 0] S_AXI_RRESP;
-output wire                                S_AXI_RVALID;
-input  wire                                S_AXI_RREADY;
+//input  wire                                S_AXI_ACLK;
+//input  wire                                S_AXI_ARESETN;
+//input  wire     [C_S_AXI_ADDR_WIDTH-1 : 0] S_AXI_AWADDR;
+//input  wire                        [2 : 0] S_AXI_AWPROT;
+//input  wire                                S_AXI_AWVALID;
+//output wire                                S_AXI_AWREADY;
+//input  wire     [C_S_AXI_DATA_WIDTH-1 : 0] S_AXI_WDATA;
+//input  wire [(C_S_AXI_DATA_WIDTH/8)-1 : 0] S_AXI_WSTRB;
+//input  wire                                S_AXI_WVALID;
+//output wire                                S_AXI_WREADY;
+//output wire                        [1 : 0] S_AXI_BRESP;
+//output wire                                S_AXI_BVALID;
+//input  wire                                S_AXI_BREADY;
+//input  wire     [C_S_AXI_ADDR_WIDTH-1 : 0] S_AXI_ARADDR;
+//input  wire                        [2 : 0] S_AXI_ARPROT;
+//input  wire                                S_AXI_ARVALID;
+//output wire                                S_AXI_ARREADY;
+//output wire     [C_S_AXI_DATA_WIDTH-1 : 0] S_AXI_RDATA;
+//output wire                        [1 : 0] S_AXI_RRESP;
+//output wire                                S_AXI_RVALID;
+//input  wire                                S_AXI_RREADY;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -215,26 +251,30 @@ wire                               core_memctrl0_rden;
 wire          [DATA_WIDTH - 1 : 0] core_memctrl0_odat;
 wire                               core_memctrl0_oval;
 
-wire [REG_WIDTH - 1 : 0] i_conf_ctrl;
-wire [REG_WIDTH - 1 : 0] i_conf_outputsize;
-wire [REG_WIDTH - 1 : 0] i_conf_kernelsize;
-wire [REG_WIDTH - 1 : 0] i_conf_weightinterval;
-wire [REG_WIDTH - 1 : 0] i_conf_kernelshape;
-wire [REG_WIDTH - 1 : 0] i_conf_inputshape;
-wire [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
-wire [REG_WIDTH - 1 : 0] o_conf_status;
+input [REG_WIDTH - 1 : 0] i_conf_ctrl;
+input [REG_WIDTH - 1 : 0] i_conf_outputsize;
+input [REG_WIDTH - 1 : 0] i_conf_kernelsize;
+input [REG_WIDTH - 1 : 0] i_conf_weightinterval;
+input [REG_WIDTH - 1 : 0] i_conf_kernelshape;
+input [REG_WIDTH - 1 : 0] i_conf_inputshape;
+input [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
+output [REG_WIDTH - 1 : 0] o_conf_status;
 
-wire [REG_WIDTH - 1 : 0] dbg_linekcpe_valid_knx_cnt;
-wire [REG_WIDTH - 1 : 0] dbg_linekcpe_psum_line_vld_cnt;
-wire [REG_WIDTH - 1 : 0] dbg_linekcpe_idata_req_cnt;
-wire [REG_WIDTH - 1 : 0] dbg_linekcpe_odata_req_cnt;
-wire [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_line_req_cnt;
-wire [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_done_cnt;
-wire [REG_WIDTH - 1 : 0] dbg_linekcpe_kernel_done_cnt;
-wire [REG_WIDTH - 1 : 0] dbg_psumacc_base_addr;
-wire [REG_WIDTH - 1 : 0] dbg_psumacc_psum_out_cnt;
-wire [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
-wire [REG_WIDTH - 1 : 0] dbg_psumacc_rd_addr;
+output [REG_WIDTH - 1 : 0] dbg_linekcpe_valid_knx_cnt;
+output [REG_WIDTH - 1 : 0] dbg_linekcpe_psum_line_vld_cnt;
+output [REG_WIDTH - 1 : 0] dbg_linekcpe_idata_req_cnt;
+output [REG_WIDTH - 1 : 0] dbg_linekcpe_odata_req_cnt;
+output [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_line_req_cnt;
+output [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_done_cnt;
+output [REG_WIDTH - 1 : 0] dbg_linekcpe_kernel_done_cnt;
+output [REG_WIDTH - 1 : 0] dbg_psumacc_base_addr;
+output [REG_WIDTH - 1 : 0] dbg_psumacc_psum_out_cnt;
+output [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
+output [REG_WIDTH - 1 : 0] dbg_psumacc_rd_addr;
+
+output [REG_WIDTH - 1 : 0] dbg_datareq_knlinex_cnt;
+output [REG_WIDTH - 1 : 0] dbg_datareq_addr_reg;
+
 
 // Core
 accelerator_core accelerator_core_inst(
@@ -282,9 +322,6 @@ wire                      pixelconcat_ostall;
 wire [ADDR_WIDTH - 1 : 0] datareq_o_addr;
 wire                      datareq_o_rden;
 
-wire [REG_WIDTH - 1 : 0] dbg_datareq_knlinex_cnt;
-wire [REG_WIDTH - 1 : 0] dbg_datareq_addr_reg;
-
 data_req data_req_inst(
     .clk                    (clk),
     .rst                    (rst),
@@ -309,7 +346,11 @@ pixel_concat pixel_concat_inst(
     .ostall                 (pixelconcat_ostall)
     );
 
-bram_ctrl data_bram_ctrl_inst(
+bram_ctrl
+    #(
+    .ADDR_MODE              (2)
+    )
+data_bram_ctrl_inst(
     .clk                    (clk),
     .rst                    (rst),
     .addr                   (datareq_o_addr),
@@ -356,7 +397,11 @@ weight_req weight_req_inst(
     .mem3_oval              (weightreq_mem3_oval)
     );
 
-bram_ctrl weight_bram_ctrl_inst_0(
+bram_ctrl
+    #(
+    .ADDR_MODE              (2)
+    )
+weight_bram_ctrl_inst_0(
     .clk                    (clk),
     .rst                    (rst),
     .addr                   (weightreq_memx_addr),
@@ -373,7 +418,11 @@ bram_ctrl weight_bram_ctrl_inst_0(
     .mem_rst                (mem_rst_1)
     );
 
-bram_ctrl weight_bram_ctrl_inst_1(
+bram_ctrl
+    #(
+    .ADDR_MODE              (2)
+    )
+weight_bram_ctrl_inst_1(
     .clk                    (clk),
     .rst                    (rst),
     .addr                   (weightreq_memx_addr),
@@ -390,7 +439,11 @@ bram_ctrl weight_bram_ctrl_inst_1(
     .mem_rst                (mem_rst_2)
     );
 
-bram_ctrl weight_bram_ctrl_inst_2(
+bram_ctrl
+    #(
+    .ADDR_MODE              (2)
+    )
+weight_bram_ctrl_inst_2(
     .clk                    (clk),
     .rst                    (rst),
     .addr                   (weightreq_memx_addr),
@@ -407,7 +460,11 @@ bram_ctrl weight_bram_ctrl_inst_2(
     .mem_rst                (mem_rst_3)
     );
 
-bram_ctrl weight_bram_ctrl_inst_3(
+bram_ctrl
+    #(
+    .ADDR_MODE              (2)
+    )
+weight_bram_ctrl_inst_3(
     .clk                    (clk),
     .rst                    (rst),
     .addr                   (weightreq_memx_addr),
@@ -459,58 +516,66 @@ bram_ctrl psum_bram_ctrl_inst_1(
     .mem_rst                (mem_rst_6)
     );
 
-// Config registers
-config_regfile #
-(
-    .C_S_AXI_DATA_WIDTH     (C_S_AXI_DATA_WIDTH),
-    .C_S_AXI_ADDR_WIDTH     (C_S_AXI_ADDR_WIDTH)
-)
-config_regfile_inst
-(
-    // Users to add ports here
-    .reg0                   (i_conf_ctrl),
-    .reg1                   (i_conf_outputsize),
-    .reg2                   (i_conf_kernelsize),
-    .reg3                   (i_conf_weightinterval),
-    .reg4                   (i_conf_kernelshape),
-    .reg5                   (i_conf_inputshape),
-    .reg6                   (i_conf_inputrstcnt),
-    .ireg0                  (o_conf_status),
-    .ireg1                  (dbg_datareq_knlinex_cnt),
-    .ireg2                  (dbg_datareq_addr_reg),
-    .ireg3                  (dbg_linekcpe_valid_knx_cnt),
-    .ireg4                  (dbg_linekcpe_psum_line_vld_cnt),
-    .ireg5                  (dbg_linekcpe_idata_req_cnt),
-    .ireg6                  (dbg_linekcpe_odata_req_cnt),
-    .ireg7                  (dbg_linekcpe_weight_line_req_cnt),
-    .ireg8                  (dbg_linekcpe_weight_done_cnt),
-    .ireg9                  (dbg_linekcpe_kernel_done_cnt),
-    .ireg10                 (dbg_psumacc_base_addr),
-    .ireg11                 (dbg_psumacc_psum_out_cnt),
-    .ireg12                 (dbg_psumacc_rd_addr),
-    .ireg13                 (dbg_psumacc_wr_addr),
 
-    .S_AXI_ACLK             (S_AXI_ACLK),
-    .S_AXI_ARESETN          (S_AXI_ARESETN),
-    .S_AXI_AWADDR           (S_AXI_AWADDR),
-    .S_AXI_AWPROT           (S_AXI_AWPROT),
-    .S_AXI_AWVALID          (S_AXI_AWVALID),
-    .S_AXI_AWREADY          (S_AXI_AWREADY),
-    .S_AXI_WDATA            (S_AXI_WDATA),
-    .S_AXI_WSTRB            (S_AXI_WSTRB),
-    .S_AXI_WVALID           (S_AXI_WVALID),
-    .S_AXI_WREADY           (S_AXI_WREADY),
-    .S_AXI_BRESP            (S_AXI_BRESP),
-    .S_AXI_BVALID           (S_AXI_BVALID),
-    .S_AXI_BREADY           (S_AXI_BREADY),
-    .S_AXI_ARADDR           (S_AXI_ARADDR),
-    .S_AXI_ARPROT           (S_AXI_ARPROT),
-    .S_AXI_ARVALID          (S_AXI_ARVALID),
-    .S_AXI_ARREADY          (S_AXI_ARREADY),
-    .S_AXI_RDATA            (S_AXI_RDATA),
-    .S_AXI_RRESP            (S_AXI_RRESP),
-    .S_AXI_RVALID           (S_AXI_RVALID),
-    .S_AXI_RREADY           (S_AXI_RREADY)
-);
+assign mem_addr_7 = mem_addr_6 << 2;
+assign mem_idat_7 = mem_idat_6;
+assign mem_odat_7 = mem_odat_6;
+assign mem_wren_7 = mem_wren_6;
+assign mem_enb_7 = mem_enb_6;
+assign mem_rst_7 = mem_rst_6;
+
+// Config registers
+// config_regfile #
+// (
+//     .C_S_AXI_DATA_WIDTH     (C_S_AXI_DATA_WIDTH),
+//     .C_S_AXI_ADDR_WIDTH     (C_S_AXI_ADDR_WIDTH)
+// )
+// config_regfile_inst
+// (
+//     // Users to add ports here
+//     .reg0                   (i_conf_ctrl),
+//     .reg1                   (i_conf_outputsize),
+//     .reg2                   (i_conf_kernelsize),
+//     .reg3                   (i_conf_weightinterval),
+//     .reg4                   (i_conf_kernelshape),
+//     .reg5                   (i_conf_inputshape),
+//     .reg6                   (i_conf_inputrstcnt),
+//     .ireg0                  (o_conf_status),
+//     .ireg1                  (dbg_datareq_knlinex_cnt),
+//     .ireg2                  (dbg_datareq_addr_reg),
+//     .ireg3                  (dbg_linekcpe_valid_knx_cnt),
+//     .ireg4                  (dbg_linekcpe_psum_line_vld_cnt),
+//     .ireg5                  (dbg_linekcpe_idata_req_cnt),
+//     .ireg6                  (dbg_linekcpe_odata_req_cnt),
+//     .ireg7                  (dbg_linekcpe_weight_line_req_cnt),
+//     .ireg8                  (dbg_linekcpe_weight_done_cnt),
+//     .ireg9                  (dbg_linekcpe_kernel_done_cnt),
+//     .ireg10                 (dbg_psumacc_base_addr),
+//     .ireg11                 (dbg_psumacc_psum_out_cnt),
+//     .ireg12                 (dbg_psumacc_rd_addr),
+//     .ireg13                 (dbg_psumacc_wr_addr),
+
+//     .S_AXI_ACLK             (S_AXI_ACLK),
+//     .S_AXI_ARESETN          (S_AXI_ARESETN),
+//     .S_AXI_AWADDR           (S_AXI_AWADDR),
+//     .S_AXI_AWPROT           (S_AXI_AWPROT),
+//     .S_AXI_AWVALID          (S_AXI_AWVALID),
+//     .S_AXI_AWREADY          (S_AXI_AWREADY),
+//     .S_AXI_WDATA            (S_AXI_WDATA),
+//     .S_AXI_WSTRB            (S_AXI_WSTRB),
+//     .S_AXI_WVALID           (S_AXI_WVALID),
+//     .S_AXI_WREADY           (S_AXI_WREADY),
+//     .S_AXI_BRESP            (S_AXI_BRESP),
+//     .S_AXI_BVALID           (S_AXI_BVALID),
+//     .S_AXI_BREADY           (S_AXI_BREADY),
+//     .S_AXI_ARADDR           (S_AXI_ARADDR),
+//     .S_AXI_ARPROT           (S_AXI_ARPROT),
+//     .S_AXI_ARVALID          (S_AXI_ARVALID),
+//     .S_AXI_ARREADY          (S_AXI_ARREADY),
+//     .S_AXI_RDATA            (S_AXI_RDATA),
+//     .S_AXI_RRESP            (S_AXI_RRESP),
+//     .S_AXI_RVALID           (S_AXI_RVALID),
+//     .S_AXI_RREADY           (S_AXI_RREADY)
+// );
 
 endmodule
