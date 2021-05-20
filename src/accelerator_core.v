@@ -26,25 +26,25 @@ module accelerator_core(
     o_data_req,
     o_data_end,
     i_data,
-    i_data_val,
+    i_data_vld,
     o_weight_req,
     i_weight,
-    i_weight_val,
+    i_weight_vld,
     // o_psum_kn0,
-    // o_psum_kn0_val,
+    // o_psum_kn0_vld,
     // o_psum_kn1,
-    // o_psum_kn1_val,
+    // o_psum_kn1_vld,
     // o_psum_kn2,
-    // o_psum_kn2_val,
+    // o_psum_kn2_vld,
     // o_psum_kn3,
-    // o_psum_kn3_val,
+    // o_psum_kn3_vld,
     memctrl0_wadd,
     memctrl0_wren,
     memctrl0_idat,
     memctrl0_radd,
     memctrl0_rden,
     memctrl0_odat,
-    memctrl0_oval,
+    memctrl0_ovld,
     i_conf_ctrl,
     i_conf_outputsize,
     i_conf_kernelsize,
@@ -92,23 +92,23 @@ output wire                               o_data_end;
 output wire                               o_weight_req;
 input  wire [IN_INPUT_DAT_WIDTH  - 1 : 0] i_data;
 input  wire [IN_WEIGHT_DAT_WIDTH - 1 : 0] i_weight;
-input  wire                               i_data_val;
-input  wire                               i_weight_val;
+input  wire                               i_data_vld;
+input  wire                               i_weight_vld;
 // output wire           [BIT_WIDTH - 1 : 0] o_psum_kn0;
 // output wire           [BIT_WIDTH - 1 : 0] o_psum_kn1;
 // output wire           [BIT_WIDTH - 1 : 0] o_psum_kn2;
 // output wire           [BIT_WIDTH - 1 : 0] o_psum_kn3;
-// output wire                               o_psum_kn0_val;
-// output wire                               o_psum_kn1_val;
-// output wire                               o_psum_kn2_val;
-// output wire                               o_psum_kn3_val;
+// output wire                               o_psum_kn0_vld;
+// output wire                               o_psum_kn1_vld;
+// output wire                               o_psum_kn2_vld;
+// output wire                               o_psum_kn3_vld;
 output wire          [ADDR_WIDTH - 1 : 0] memctrl0_wadd;
 output wire                               memctrl0_wren;
 output wire          [DATA_WIDTH - 1 : 0] memctrl0_idat;
 output wire          [ADDR_WIDTH - 1 : 0] memctrl0_radd;
 output wire                               memctrl0_rden;
 input  wire          [DATA_WIDTH - 1 : 0] memctrl0_odat;
-input  wire                               memctrl0_oval;
+input  wire                               memctrl0_ovld;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_ctrl;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_outputsize;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelsize;
@@ -133,14 +133,14 @@ output wire           [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
-wire  [BIT_WIDTH - 1 : 0] accum_i_psum [NUM_KERNEL - 1 : 0];
-wire [NUM_KERNEL - 1 : 0] accum_i_psum_val;
-wire                      accum_i_psum_end;
+wire  [BIT_WIDTH * 2 - 1 : 0] accum_i_psum [NUM_KERNEL - 1 : 0];
+wire     [NUM_KERNEL - 1 : 0] accum_i_psum_vld;
+wire                          accum_i_psum_end;
 // wire [BIT_WIDTH - 1 : 0]                accum_o_psum [NUM_KERNEL - 1 : 0];
-// wire [NUM_KERNEL - 1 : 0]               accum_o_psum_val;
+// wire [NUM_KERNEL - 1 : 0]               accum_o_psum_vld;
 
 // wire [(BIT_WIDTH * NUM_KERNEL) - 1 : 0] engine_i_psum;
-// wire                                    engine_i_psum_val;
+// wire                                    engine_i_psum_vld;
 
 wire                      rst_soft;
 wire                      rst_p;
@@ -156,20 +156,20 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .o_data_req                         (o_data_req),
     .o_data_end                         (o_data_end),
     .i_data                             (i_data),
-    .i_data_val                         (i_data_val),
+    .i_data_vld                         (i_data_vld),
     .o_weight_req                       (o_weight_req),
     .i_weight                           (i_weight),
-    .i_weight_val                       (i_weight_val),
+    .i_weight_vld                       (i_weight_vld),
     // .i_psum                             (engine_i_psum),
-    // .i_psum_val                         (engine_i_psum_val),
+    // .i_psum_vld                         (engine_i_psum_vld),
     .o_psum_kn0                         (accum_i_psum[0]),
-    .o_psum_kn0_val                     (accum_i_psum_val[0]),
+    .o_psum_kn0_vld                     (accum_i_psum_vld[0]),
     .o_psum_kn1                         (accum_i_psum[1]),
-    .o_psum_kn1_val                     (accum_i_psum_val[1]),
+    .o_psum_kn1_vld                     (accum_i_psum_vld[1]),
     .o_psum_kn2                         (accum_i_psum[2]),
-    .o_psum_kn2_val                     (accum_i_psum_val[2]),
+    .o_psum_kn2_vld                     (accum_i_psum_vld[2]),
     .o_psum_kn3                         (accum_i_psum[3]),
-    .o_psum_kn3_val                     (accum_i_psum_val[3]),
+    .o_psum_kn3_vld                     (accum_i_psum_vld[3]),
     .o_psum_end                         (accum_i_psum_end),
     .i_conf_ctrl                        (i_conf_ctrl),
     .i_conf_kernelshape                 (i_conf_kernelshape),
@@ -191,13 +191,13 @@ psum_accum_ctrl psum_accum_ctrl_0(
     .clk                        (clk),
     .rst                        (rst_p),
     .psum_kn0_dat               (accum_i_psum[0]),
-    .psum_kn0_vld               (accum_i_psum_val[0]),
+    .psum_kn0_vld               (accum_i_psum_vld[0]),
     .psum_kn1_dat               (accum_i_psum[1]),
-    .psum_kn1_vld               (accum_i_psum_val[1]),
+    .psum_kn1_vld               (accum_i_psum_vld[1]),
     .psum_kn2_dat               (accum_i_psum[2]),
-    .psum_kn2_vld               (accum_i_psum_val[2]),
+    .psum_kn2_vld               (accum_i_psum_vld[2]),
     .psum_kn3_dat               (accum_i_psum[3]),
-    .psum_kn3_vld               (accum_i_psum_val[3]),
+    .psum_kn3_vld               (accum_i_psum_vld[3]),
     .psum_knx_end               (accum_i_psum_end),
     .memctrl0_wadd              (memctrl0_wadd),
     .memctrl0_wren              (memctrl0_wren),
@@ -205,7 +205,7 @@ psum_accum_ctrl psum_accum_ctrl_0(
     .memctrl0_radd              (memctrl0_radd),
     .memctrl0_rden              (memctrl0_rden),
     .memctrl0_odat              (memctrl0_odat),
-    .memctrl0_oval              (memctrl0_oval),
+    .memctrl0_ovld              (memctrl0_ovld),
     .i_conf_weightinterval      (i_conf_weightinterval),
     .i_conf_outputsize          (i_conf_outputsize),
     .i_conf_kernelshape         (i_conf_kernelshape),

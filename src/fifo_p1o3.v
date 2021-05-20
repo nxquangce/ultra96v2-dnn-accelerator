@@ -27,7 +27,7 @@ module fifo_p1o3(
     wr_data,
     rd_req,
     rd_data,
-    rd_data_val,
+    rd_data_vld,
     data_counter,
     full,
     empty
@@ -48,7 +48,7 @@ input  wire                                 wr_req;
 input  wire [DAT_WIDTH - 1 : 0]             wr_data;
 input  wire                                 rd_req;
 output wire [DAT_WIDTH * NUM_RDATA - 1 : 0] rd_data;
-output wire                                 rd_data_val;
+output wire                                 rd_data_vld;
 output wire [FF_ADDR_WIDTH : 0]             data_counter;
 output wire                                 full;
 output wire                                 empty;
@@ -116,7 +116,7 @@ always @(posedge clk) begin
 end
 
 // Read 3 data
-reg rd_data_val_reg;
+reg rd_data_vld_reg;
 wire [FF_ADDR_WIDTH - 1 : 0] rd_addr1;
 wire [FF_ADDR_WIDTH - 1 : 0] rd_addr2;
 
@@ -129,25 +129,25 @@ always @(posedge clk) begin
         rd_data_reg[1]  <= 0;
         rd_data_reg[2]  <= 0;
         rd_ptr          <= 0;
-        rd_data_val_reg <= 0;
+        rd_data_vld_reg <= 0;
     end
     else if (rd_enb) begin
         rd_data_reg[0]  <= ff_mem[rd_addr];
         rd_data_reg[1]  <= ff_mem[rd_addr1];
         rd_data_reg[2]  <= ff_mem[rd_addr2];
         rd_ptr          <= rd_ptr + 1'b1;
-        rd_data_val_reg <= 1'b1;
+        rd_data_vld_reg <= 1'b1;
     end
     else begin
         rd_data_reg[0]  <= 0;
         rd_data_reg[1]  <= 0;
         rd_data_reg[2]  <= 0;
-        rd_data_val_reg <= 0;
+        rd_data_vld_reg <= 0;
     end
 end
 
 // Read data out
 assign rd_data = {rd_data_reg[2], rd_data_reg[1], rd_data_reg[0]};
-assign rd_data_val = rd_data_val_reg;
+assign rd_data_vld = rd_data_vld_reg;
 
 endmodule

@@ -241,15 +241,15 @@ wire                               core_o_data_end;
 wire                               core_o_weight_req;
 wire [IN_INPUT_DAT_WIDTH  - 1 : 0] core_i_data;
 wire [IN_WEIGHT_DAT_WIDTH - 1 : 0] core_i_weight;
-wire                               core_i_data_val;
-wire                               core_i_weight_val;
+wire                               core_i_data_vld;
+wire                               core_i_weight_vld;
 wire          [ADDR_WIDTH - 1 : 0] core_memctrl0_wadd;
 wire                               core_memctrl0_wren;
 wire          [DATA_WIDTH - 1 : 0] core_memctrl0_idat;
 wire          [ADDR_WIDTH - 1 : 0] core_memctrl0_radd;
 wire                               core_memctrl0_rden;
 wire          [DATA_WIDTH - 1 : 0] core_memctrl0_odat;
-wire                               core_memctrl0_oval;
+wire                               core_memctrl0_ovld;
 
 input [REG_WIDTH - 1 : 0] i_conf_ctrl;
 input [REG_WIDTH - 1 : 0] i_conf_outputsize;
@@ -283,17 +283,17 @@ accelerator_core accelerator_core_inst(
     .o_data_req             (core_o_data_req),
     .o_data_end             (core_o_data_end),
     .i_data                 (core_i_data),
-    .i_data_val             (core_i_data_val),
+    .i_data_vld             (core_i_data_vld),
     .o_weight_req           (core_o_weight_req),
     .i_weight               (core_i_weight),
-    .i_weight_val           (core_i_weight_val),
+    .i_weight_vld           (core_i_weight_vld),
     .memctrl0_wadd          (core_memctrl0_wadd),
     .memctrl0_wren          (core_memctrl0_wren),
     .memctrl0_idat          (core_memctrl0_idat),
     .memctrl0_radd          (core_memctrl0_radd),
     .memctrl0_rden          (core_memctrl0_rden),
     .memctrl0_odat          (core_memctrl0_odat),
-    .memctrl0_oval          (core_memctrl0_oval),
+    .memctrl0_ovld          (core_memctrl0_ovld),
     .i_conf_ctrl            (i_conf_ctrl),
     .i_conf_outputsize      (i_conf_outputsize),
     .i_conf_kernelsize      (i_conf_kernelsize),
@@ -317,7 +317,7 @@ accelerator_core accelerator_core_inst(
 
 // Data request
 wire [DATA_WIDTH - 1 : 0] pixelconcat_idat;
-wire                      pixelconcat_ival;
+wire                      pixelconcat_ivld;
 wire                      pixelconcat_ostall;
 wire [ADDR_WIDTH - 1 : 0] datareq_o_addr;
 wire                      datareq_o_rden;
@@ -340,9 +340,9 @@ pixel_concat pixel_concat_inst(
     .clk                    (clk),
     .rst                    (rst),
     .idat                   (pixelconcat_idat),
-    .ival                   (pixelconcat_ival),
+    .ival                   (pixelconcat_ivld),
     .odat                   (core_i_data),
-    .oval                   (core_i_data_val),
+    .oval                   (core_i_data_vld),
     .ostall                 (pixelconcat_ostall)
     );
 
@@ -358,7 +358,7 @@ data_bram_ctrl_inst(
     .idat                   (0),
     .rden                   (datareq_o_rden),
     .odat                   (pixelconcat_idat),
-    .oval                   (pixelconcat_ival),
+    .oval                   (pixelconcat_ivld),
     .mem_addr               (mem_addr_0),
     .mem_idat               (mem_idat_0),
     .mem_odat               (mem_odat_0),
@@ -374,27 +374,27 @@ wire [DATA_WIDTH - 1 : 0] weightreq_mem0_odat;
 wire [DATA_WIDTH - 1 : 0] weightreq_mem1_odat;
 wire [DATA_WIDTH - 1 : 0] weightreq_mem2_odat;
 wire [DATA_WIDTH - 1 : 0] weightreq_mem3_odat;
-wire                      weightreq_mem0_oval;
-wire                      weightreq_mem1_oval;
-wire                      weightreq_mem2_oval;
-wire                      weightreq_mem3_oval;
+wire                      weightreq_mem0_ovld;
+wire                      weightreq_mem1_ovld;
+wire                      weightreq_mem2_ovld;
+wire                      weightreq_mem3_ovld;
 
 weight_req weight_req_inst(
     .clk                    (clk),
     .rst                    (rst),
     .i_req                  (core_o_weight_req),
     .o_dat                  (core_i_weight),
-    .o_vld                  (core_i_weight_val),
+    .o_vld                  (core_i_weight_vld),
     .memx_addr              (weightreq_memx_addr),
     .memx_rden              (weightreq_memx_rden),
     .mem0_odat              (weightreq_mem0_odat),
     .mem1_odat              (weightreq_mem1_odat),
     .mem2_odat              (weightreq_mem2_odat),
     .mem3_odat              (weightreq_mem3_odat),
-    .mem0_oval              (weightreq_mem0_oval),
-    .mem1_oval              (weightreq_mem1_oval),
-    .mem2_oval              (weightreq_mem2_oval),
-    .mem3_oval              (weightreq_mem3_oval)
+    .mem0_oval              (weightreq_mem0_ovld),
+    .mem1_oval              (weightreq_mem1_ovld),
+    .mem2_oval              (weightreq_mem2_ovld),
+    .mem3_oval              (weightreq_mem3_ovld)
     );
 
 bram_ctrl
@@ -409,7 +409,7 @@ weight_bram_ctrl_inst_0(
     .idat                   (0),
     .rden                   (weightreq_memx_rden),
     .odat                   (weightreq_mem0_odat),
-    .oval                   (weightreq_mem0_oval),
+    .oval                   (weightreq_mem0_ovld),
     .mem_addr               (mem_addr_1),
     .mem_idat               (mem_idat_1),
     .mem_odat               (mem_odat_1),
@@ -430,7 +430,7 @@ weight_bram_ctrl_inst_1(
     .idat                   (0),
     .rden                   (weightreq_memx_rden),
     .odat                   (weightreq_mem1_odat),
-    .oval                   (weightreq_mem1_oval),
+    .oval                   (weightreq_mem1_ovld),
     .mem_addr               (mem_addr_2),
     .mem_idat               (mem_idat_2),
     .mem_odat               (mem_odat_2),
@@ -451,7 +451,7 @@ weight_bram_ctrl_inst_2(
     .idat                   (0),
     .rden                   (weightreq_memx_rden),
     .odat                   (weightreq_mem2_odat),
-    .oval                   (weightreq_mem2_oval),
+    .oval                   (weightreq_mem2_ovld),
     .mem_addr               (mem_addr_3),
     .mem_idat               (mem_idat_3),
     .mem_odat               (mem_odat_3),
@@ -472,7 +472,7 @@ weight_bram_ctrl_inst_3(
     .idat                   (0),
     .rden                   (weightreq_memx_rden),
     .odat                   (weightreq_mem3_odat),
-    .oval                   (weightreq_mem3_oval),
+    .oval                   (weightreq_mem3_ovld),
     .mem_addr               (mem_addr_4),
     .mem_idat               (mem_idat_4),
     .mem_odat               (mem_odat_4),
@@ -490,7 +490,7 @@ bram_ctrl psum_bram_ctrl_inst_0(
     .idat                   (0),
     .rden                   (core_memctrl0_rden),
     .odat                   (core_memctrl0_odat),
-    .oval                   (core_memctrl0_oval),
+    .oval                   (core_memctrl0_ovld),
     .mem_addr               (mem_addr_5),
     .mem_idat               (mem_idat_5),
     .mem_odat               (mem_odat_5),
@@ -519,7 +519,6 @@ bram_ctrl psum_bram_ctrl_inst_1(
 
 assign mem_addr_7 = mem_addr_6 << 2;
 assign mem_idat_7 = mem_idat_6;
-assign mem_odat_7 = mem_odat_6;
 assign mem_wren_7 = mem_wren_6;
 assign mem_enb_7 = mem_enb_6;
 assign mem_rst_7 = mem_rst_6;

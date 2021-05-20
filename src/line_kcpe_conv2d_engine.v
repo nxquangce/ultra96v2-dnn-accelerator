@@ -29,20 +29,20 @@ module line_kcpe_conv2d_engine(
     o_data_req,
     o_data_end,
     i_data,
-    i_data_val,
+    i_data_vld,
     o_weight_req,
     i_weight,
-    i_weight_val,
+    i_weight_vld,
     // i_psum,
-    // i_psum_val,
+    // i_psum_vld,
     o_psum_kn0,
-    o_psum_kn0_val,
+    o_psum_kn0_vld,
     o_psum_kn1,
-    o_psum_kn1_val,
+    o_psum_kn1_vld,
     o_psum_kn2,
-    o_psum_kn2_val,
+    o_psum_kn2_vld,
     o_psum_kn3,
-    o_psum_kn3_val,
+    o_psum_kn3_vld,
     o_psum_end,
     i_conf_ctrl,
     i_conf_kernelshape,
@@ -86,21 +86,21 @@ output wire                               o_weight_req;
 input  wire  [IN_INPUT_DAT_WIDTH - 1 : 0] i_data;
 input  wire [IN_WEIGHT_DAT_WIDTH - 1 : 0] i_weight;
 // input  wire [(BIT_WIDTH * NUM_KERNEL              ) - 1 : 0] i_psum;
-input  wire                               i_data_val;
-input  wire                               i_weight_val;
-// input  wire                                                  i_psum_val;
+input  wire                               i_data_vld;
+input  wire                               i_weight_vld;
+// input  wire                                                  i_psum_vld;
 // output wire [(BIT_WIDTH * NUM_KERNEL              ) - 1 : 0] o_psum;
-// output wire [NUM_KERNEL - 1 : 0]                             o_psum_val;
-output wire           [BIT_WIDTH - 1 : 0] o_psum_kn0;
-output wire           [BIT_WIDTH - 1 : 0] o_psum_kn1;
-output wire           [BIT_WIDTH - 1 : 0] o_psum_kn2;
-output wire           [BIT_WIDTH - 1 : 0] o_psum_kn3;
-output wire                               o_psum_kn0_val;
-output wire                               o_psum_kn1_val;
-output wire                               o_psum_kn2_val;
-output wire                               o_psum_kn3_val;
+// output wire [NUM_KERNEL - 1 : 0]                             o_psum_vld;
+output wire       [BIT_WIDTH * 2 - 1 : 0] o_psum_kn0;
+output wire       [BIT_WIDTH * 2 - 1 : 0] o_psum_kn1;
+output wire       [BIT_WIDTH * 2 - 1 : 0] o_psum_kn2;
+output wire       [BIT_WIDTH * 2 - 1 : 0] o_psum_kn3;
+output wire                               o_psum_kn0_vld;
+output wire                               o_psum_kn1_vld;
+output wire                               o_psum_kn2_vld;
+output wire                               o_psum_kn3_vld;
 output wire                               o_psum_end;
-// output wire [REG_WIDTH * NUM_KCPE - 1 : 0]      err_psum_val;
+// output wire [REG_WIDTH * NUM_KCPE - 1 : 0]      err_psum_vld;
 
 input  wire           [REG_WIDTH - 1 : 0] i_conf_ctrl;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelshape;
@@ -122,16 +122,11 @@ output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_kernel_done_cnt;
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
 // Input signals
+localparam BUFFER_O_DATA_WIDTH = IN_INPUT_DAT_WIDTH * NUM_RDATA;
+
 wire                                   i_data_req;
-wire [BIT_WIDTH - 1 : 0]               i_data_ch0;
-wire [BIT_WIDTH - 1 : 0]               i_data_ch1;
-wire [BIT_WIDTH - 1 : 0]               i_data_ch2;
-wire [BIT_WIDTH * NUM_RDATA - 1 : 0]   buffer_o_data_ch0;
-wire [BIT_WIDTH * NUM_RDATA - 1 : 0]   buffer_o_data_ch1;
-wire [BIT_WIDTH * NUM_RDATA - 1 : 0]   buffer_o_data_ch2;
-wire                                   buffer_o_data_ch0_val;
-wire                                   buffer_o_data_ch1_val;
-wire                                   buffer_o_data_ch2_val;
+wire [BUFFER_O_DATA_WIDTH - 1 : 0]     buffer_o_data;
+wire                                   buffer_o_data_vld;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0] engine_i_data_pos0;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0] engine_i_data_pos1;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0] engine_i_data_pos2;
@@ -149,70 +144,48 @@ wire [BIT_WIDTH * NUM_CHANNEL * NUM_RDATA - 1 : 0]  buffer_o_weight_3ch3pos_kn0;
 wire [BIT_WIDTH * NUM_CHANNEL * NUM_RDATA - 1 : 0]  buffer_o_weight_3ch3pos_kn1;
 wire [BIT_WIDTH * NUM_CHANNEL * NUM_RDATA - 1 : 0]  buffer_o_weight_3ch3pos_kn2;
 wire [BIT_WIDTH * NUM_CHANNEL * NUM_RDATA - 1 : 0]  buffer_o_weight_3ch3pos_kn3;
-wire                                                buffer_o_weight_3ch3pos_kn0_val;
-wire                                                buffer_o_weight_3ch3pos_kn1_val;
-wire                                                buffer_o_weight_3ch3pos_kn2_val;
-wire                                                buffer_o_weight_3ch3pos_kn3_val;
+wire                                                buffer_o_weight_3ch3pos_kn0_vld;
+wire                                                buffer_o_weight_3ch3pos_kn1_vld;
+wire                                                buffer_o_weight_3ch3pos_kn2_vld;
+wire                                                buffer_o_weight_3ch3pos_kn3_vld;
 wire                                                buffer_o_weight_full;
 
-wire [BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL - 1 : 0] engine_i_weight_3ch3kn_pos0;
-wire [BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL - 1 : 0] engine_i_weight_3ch3kn_pos1;
-wire [BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL - 1 : 0] engine_i_weight_3ch3kn_pos2;
+wire [BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL - 1 : 0] engine_i_weight_3ch4kn_pos0;
+wire [BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL - 1 : 0] engine_i_weight_3ch4kn_pos1;
+wire [BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL - 1 : 0] engine_i_weight_3ch4kn_pos2;
 
 // Psum out signals
-wire [BIT_WIDTH * NUM_KERNEL - 1 : 0] engine_o_psum_kcpe0;
-wire [BIT_WIDTH * NUM_KERNEL - 1 : 0] engine_o_psum_kcpe1;
-wire [BIT_WIDTH * NUM_KERNEL - 1 : 0] engine_o_psum_kcpe2;
-wire                                  engine_o_psum_kcpe0_val;
-wire                                  engine_o_psum_kcpe1_val;
-wire                                  engine_o_psum_kcpe2_val;
-
-
-// Split input data into channels
-assign i_data_ch0 = i_data[BIT_WIDTH     - 1 : 0];
-assign i_data_ch1 = i_data[BIT_WIDTH * 2 - 1 : BIT_WIDTH];
-assign i_data_ch2 = i_data[BIT_WIDTH * 3 - 1 : BIT_WIDTH * 2];
+wire [BIT_WIDTH *2 * NUM_KERNEL - 1 : 0] engine_o_psum_kcpe0;
+wire [BIT_WIDTH *2 * NUM_KERNEL - 1 : 0] engine_o_psum_kcpe1;
+wire [BIT_WIDTH *2 * NUM_KERNEL - 1 : 0] engine_o_psum_kcpe2;
+wire                                     engine_o_psum_kcpe0_vld;
+wire                                     engine_o_psum_kcpe1_vld;
+wire                                     engine_o_psum_kcpe2_vld;
 
 // Activation input buffer
-input_buffer input_buffer_0(
-    .clk              (clk),
-    .rst              (rst),
-    .i_data_ch0       (i_data_ch0),
-    .i_data_ch0_val   (i_data_val),
-    .i_data_ch1       (i_data_ch1),
-    .i_data_ch1_val   (i_data_val),
-    .i_data_ch2       (i_data_ch2),
-    .i_data_ch2_val   (i_data_val),
-    .i_data_req       (i_data_req),
-    .o_data_ch0       (buffer_o_data_ch0),
-    .o_data_ch0_val   (buffer_o_data_ch0_val),
-    .o_data_ch1       (buffer_o_data_ch1),
-    .o_data_ch1_val   (buffer_o_data_ch1_val),
-    .o_data_ch2       (buffer_o_data_ch2),
-    .o_data_ch2_val   (buffer_o_data_ch2_val),
-    .data_counter_ch0 (),
-    .data_counter_ch1 (),
-    .data_counter_ch2 (),
-    .o_full           (buffer_o_data_full),
-    .o_empty          (buffer_o_data_empty)
+input_buffer 
+    #(
+    .BIT_WIDTH          (BIT_WIDTH),
+    .NUM_CHANNEL        (NUM_CHANNEL),
+    .NUM_RDATA          (NUM_RDATA)
+    )
+input_buffer_0(
+    .clk                (clk),
+    .rst                (rst),
+    .i_data             (i_data),
+    .i_data_vld         (i_data_vld),
+    .i_data_req         (i_data_req),
+    .o_data             (buffer_o_data),
+    .o_data_vld         (buffer_o_data_vld),
+    .data_counter       (),
+    .o_full             (buffer_o_data_full),
+    .o_empty            (buffer_o_data_empty)
     );
 
-// Convert position/channel into channel/position
-wire [BIT_WIDTH - 1 : 0] buffer_o_data [NUM_KCPE - 1 : 0][NUM_CHANNEL - 1 : 0];
-
-genvar idxPos;
-generate
-    for (idxPos = 0; idxPos < NUM_KCPE; idxPos = idxPos + 1) begin
-        assign buffer_o_data[idxPos][0] = buffer_o_data_ch0[BIT_WIDTH - 1 : 0];
-        assign buffer_o_data[idxPos][1] = buffer_o_data_ch1[BIT_WIDTH * 2 - 1 : BIT_WIDTH];
-        assign buffer_o_data[idxPos][2] = buffer_o_data_ch2[BIT_WIDTH * 3 - 1 : BIT_WIDTH * 2];
-    end
-endgenerate
-
 // Data in position
-assign engine_i_data_pos0 = {buffer_o_data[0][2], buffer_o_data[0][1], buffer_o_data[0][0]};
-assign engine_i_data_pos1 = {buffer_o_data[1][2], buffer_o_data[1][1], buffer_o_data[1][0]};
-assign engine_i_data_pos2 = {buffer_o_data[2][2], buffer_o_data[2][1], buffer_o_data[2][0]};
+assign engine_i_data_pos0 = buffer_o_data[IN_INPUT_DAT_WIDTH - 1 : 0];
+assign engine_i_data_pos1 = buffer_o_data[IN_INPUT_DAT_WIDTH * 2 - 1 : IN_INPUT_DAT_WIDTH];
+assign engine_i_data_pos2 = buffer_o_data[IN_INPUT_DAT_WIDTH * 3 - 1 : IN_INPUT_DAT_WIDTH * 2];
 
 // Weight Buffer
 assign i_weight_kn0 = i_weight[BIT_WIDTH * NUM_CHANNEL - 1 : 0];
@@ -224,22 +197,22 @@ weight_buffer weight_buffer_0(
     .clk                (clk),
     .rst                (rst),
     .i_data_kn0         (i_weight_kn0),
-    .i_data_kn0_val     (i_weight_val),
+    .i_data_kn0_val     (i_weight_vld),
     .i_data_kn1         (i_weight_kn1),
-    .i_data_kn1_val     (i_weight_val),
+    .i_data_kn1_val     (i_weight_vld),
     .i_data_kn2         (i_weight_kn2),
-    .i_data_kn2_val     (i_weight_val),
+    .i_data_kn2_val     (i_weight_vld),
     .i_data_kn3         (i_weight_kn3),
-    .i_data_kn3_val     (i_weight_val),
+    .i_data_kn3_val     (i_weight_vld),
     .i_data_req         (i_weight_req),
     .o_data_3ch_kn0     (buffer_o_weight_3ch3pos_kn0),
-    .o_data_3ch_kn0_val (buffer_o_weight_3ch3pos_kn0_val),
+    .o_data_3ch_kn0_val (buffer_o_weight_3ch3pos_kn0_vld),
     .o_data_3ch_kn1     (buffer_o_weight_3ch3pos_kn1),
-    .o_data_3ch_kn1_val (buffer_o_weight_3ch3pos_kn1_val),
+    .o_data_3ch_kn1_val (buffer_o_weight_3ch3pos_kn1_vld),
     .o_data_3ch_kn2     (buffer_o_weight_3ch3pos_kn2),
-    .o_data_3ch_kn2_val (buffer_o_weight_3ch3pos_kn2_val),
+    .o_data_3ch_kn2_val (buffer_o_weight_3ch3pos_kn2_vld),
     .o_data_3ch_kn3     (buffer_o_weight_3ch3pos_kn3),
-    .o_data_3ch_kn3_val (buffer_o_weight_3ch3pos_kn3_val),
+    .o_data_3ch_kn3_val (buffer_o_weight_3ch3pos_kn3_vld),
     .o_full             (buffer_o_weight_full)
     );
 
@@ -256,9 +229,9 @@ generate
     end
 endgenerate
 
-assign engine_i_weight_3ch3kn_pos0 = {buffer_o_weight[3][0], buffer_o_weight[2][0], buffer_o_weight[1][0], buffer_o_weight[0][0]};
-assign engine_i_weight_3ch3kn_pos1 = {buffer_o_weight[3][1], buffer_o_weight[2][1], buffer_o_weight[1][1], buffer_o_weight[0][1]};
-assign engine_i_weight_3ch3kn_pos2 = {buffer_o_weight[3][2], buffer_o_weight[2][2], buffer_o_weight[1][2], buffer_o_weight[0][2]};
+assign engine_i_weight_3ch4kn_pos0 = {buffer_o_weight[3][0], buffer_o_weight[2][0], buffer_o_weight[1][0], buffer_o_weight[0][0]};
+assign engine_i_weight_3ch4kn_pos1 = {buffer_o_weight[3][1], buffer_o_weight[2][1], buffer_o_weight[1][1], buffer_o_weight[0][1]};
+assign engine_i_weight_3ch4kn_pos2 = {buffer_o_weight[3][2], buffer_o_weight[2][2], buffer_o_weight[1][2], buffer_o_weight[0][2]};
 
 // KC PE 0
 kernel_channel_pe 
@@ -273,14 +246,14 @@ kernel_channel_pe_0
     .clk            (clk),
     .rst            (rst),
     .i_data         (engine_i_data_pos0),
-    .i_data_val     (buffer_o_data_ch0_val),
-    .i_weight       (engine_i_weight_3ch3kn_pos0),
-    .i_weight_val   (buffer_o_weight_3ch3pos_kn0_val),
+    .i_data_vld     (buffer_o_data_vld),
+    .i_weight       (engine_i_weight_3ch4kn_pos0),
+    .i_weight_vld   (buffer_o_weight_3ch3pos_kn0_vld),
     .i_psum         (0),
-    // .i_psum_val     (),
+    // .i_psum_vld     (),
     .o_psum         (engine_o_psum_kcpe0),
-    .o_psum_val     (engine_o_psum_kcpe0_val),
-    .err_psum_val   ()
+    .o_psum_vld     (engine_o_psum_kcpe0_vld),
+    .err_psum_vld   ()
     );
 
 // KC PE 1
@@ -296,14 +269,14 @@ kernel_channel_pe_1
     .clk            (clk),
     .rst            (rst),
     .i_data         (engine_i_data_pos1),
-    .i_data_val     (buffer_o_data_ch1_val),
-    .i_weight       (engine_i_weight_3ch3kn_pos1),
-    .i_weight_val   (buffer_o_weight_3ch3pos_kn0_val),
+    .i_data_vld     (buffer_o_data_vld),
+    .i_weight       (engine_i_weight_3ch4kn_pos1),
+    .i_weight_vld   (buffer_o_weight_3ch3pos_kn0_vld),
     .i_psum         (0),
-    // .i_psum_val     (),
+    // .i_psum_vld     (),
     .o_psum         (engine_o_psum_kcpe1),
-    .o_psum_val     (engine_o_psum_kcpe1_val),
-    .err_psum_val   ()
+    .o_psum_vld     (engine_o_psum_kcpe1_vld),
+    .err_psum_vld   ()
     );
 
 // KC PE 2
@@ -319,59 +292,59 @@ kernel_channel_pe_2
     .clk            (clk),
     .rst            (rst),
     .i_data         (engine_i_data_pos2),
-    .i_data_val     (buffer_o_data_ch2_val),
-    .i_weight       (engine_i_weight_3ch3kn_pos2),
-    .i_weight_val   (buffer_o_weight_3ch3pos_kn0_val),
+    .i_data_vld     (buffer_o_data_vld),
+    .i_weight       (engine_i_weight_3ch4kn_pos2),
+    .i_weight_vld   (buffer_o_weight_3ch3pos_kn0_vld),
     .i_psum         (0),
-    // .i_psum_val     (),
+    // .i_psum_vld     (),
     .o_psum         (engine_o_psum_kcpe2),
-    .o_psum_val     (engine_o_psum_kcpe2_val),
-    .err_psum_val   ()
+    .o_psum_vld     (engine_o_psum_kcpe2_vld),
+    .err_psum_vld   ()
     );
 
 // Psum output
-wire [BIT_WIDTH - 1 : 0] router_kn0;
-wire [BIT_WIDTH - 1 : 0] router_kn1;
-wire [BIT_WIDTH - 1 : 0] router_kn2;
-wire [BIT_WIDTH - 1 : 0] router_kn3;
-wire                     router_kn0_val;
-wire                     router_kn1_val;
-wire                     router_kn2_val;
-wire                     router_kn3_val;
-wire                     invalid_knx_val;
-wire                     valid_knx_cnt_max_val;
-reg                [7:0] valid_knx_cnt;
-reg  [REG_WIDTH - 1 : 0] psum_line_vld_cnt;
-wire                     psum_line_vld_cnt_max_val;
+wire [BIT_WIDTH * 2 - 1 : 0] router_kn0;
+wire [BIT_WIDTH * 2 - 1 : 0] router_kn1;
+wire [BIT_WIDTH * 2 - 1 : 0] router_kn2;
+wire [BIT_WIDTH * 2 - 1 : 0] router_kn3;
+wire                         router_kn0_vld;
+wire                         router_kn1_vld;
+wire                         router_kn2_vld;
+wire                         router_kn3_vld;
+wire                         invalid_knx_vld;
+wire                         valid_knx_cnt_max_vld;
+reg                    [7:0] valid_knx_cnt;
+reg      [REG_WIDTH - 1 : 0] psum_line_vld_cnt;
+wire                         psum_line_vld_cnt_max_vld;
 
 result_router result_router_0(
     .clk                (clk),
     .rst                (rst),
     .i_psum_kcpe0       (engine_o_psum_kcpe0),
-    .i_psum_kcpe0_val   (engine_o_psum_kcpe0_val),
+    .i_psum_kcpe0_vld   (engine_o_psum_kcpe0_vld),
     .i_psum_kcpe1       (engine_o_psum_kcpe1),
-    .i_psum_kcpe1_val   (engine_o_psum_kcpe1_val),
+    .i_psum_kcpe1_vld   (engine_o_psum_kcpe1_vld),
     .i_psum_kcpe2       (engine_o_psum_kcpe2),
-    .i_psum_kcpe2_val   (engine_o_psum_kcpe2_val),
+    .i_psum_kcpe2_vld   (engine_o_psum_kcpe2_vld),
     .o_psum_kn0         (router_kn0),
-    .o_psum_kn0_val     (router_kn0_val),
+    .o_psum_kn0_vld     (router_kn0_vld),
     .o_psum_kn1         (router_kn1),
-    .o_psum_kn1_val     (router_kn1_val),
+    .o_psum_kn1_vld     (router_kn1_vld),
     .o_psum_kn2         (router_kn2),
-    .o_psum_kn2_val     (router_kn2_val),
+    .o_psum_kn2_vld     (router_kn2_vld),
     .o_psum_kn3         (router_kn3),
-    .o_psum_kn3_val     (router_kn3_val)
+    .o_psum_kn3_vld     (router_kn3_vld)
     );
 
-assign valid_knx_cnt_max_val = valid_knx_cnt == (i_conf_inputshape[7:0] - 1'b1);
-assign invalid_knx_val = valid_knx_cnt > (i_conf_inputshape[7:0] - i_conf_kernelshape[3:0]);
+assign valid_knx_cnt_max_vld = valid_knx_cnt == (i_conf_inputshape[7:0] - 1'b1);
+assign invalid_knx_vld = valid_knx_cnt > (i_conf_inputshape[7:0] - i_conf_kernelshape[3:0]);
 
 always @(posedge clk) begin
     if (rst) begin
         valid_knx_cnt <= 0;
     end
-    else if (router_kn0_val) begin
-        valid_knx_cnt <= (valid_knx_cnt_max_val) ? 0 : valid_knx_cnt + 1'b1;
+    else if (router_kn0_vld) begin
+        valid_knx_cnt <= (valid_knx_cnt_max_vld) ? 0 : valid_knx_cnt + 1'b1;
     end
 end
 
@@ -379,23 +352,23 @@ assign o_psum_kn0 = router_kn0;
 assign o_psum_kn1 = router_kn1;
 assign o_psum_kn2 = router_kn2;
 assign o_psum_kn3 = router_kn3;
-assign o_psum_kn0_val = router_kn0_val & ~invalid_knx_val;
-assign o_psum_kn1_val = router_kn1_val & ~invalid_knx_val;
-assign o_psum_kn2_val = router_kn2_val & ~invalid_knx_val;
-assign o_psum_kn3_val = router_kn3_val & ~invalid_knx_val;
+assign o_psum_kn0_vld = router_kn0_vld & ~invalid_knx_vld;
+assign o_psum_kn1_vld = router_kn1_vld & ~invalid_knx_vld;
+assign o_psum_kn2_vld = router_kn2_vld & ~invalid_knx_vld;
+assign o_psum_kn3_vld = router_kn3_vld & ~invalid_knx_vld;
 
-assign psum_line_vld_cnt_max_val = (psum_line_vld_cnt == i_conf_outputsize);
+assign psum_line_vld_cnt_max_vld = (psum_line_vld_cnt == i_conf_outputsize);
 
 always @(posedge clk) begin
     if (rst) begin
         psum_line_vld_cnt <= 0;
     end
-    else if (o_psum_kn0_val) begin
-        psum_line_vld_cnt <= (psum_line_vld_cnt_max_val) ? 0 : psum_line_vld_cnt + 1'b1;
+    else if (o_psum_kn0_vld) begin
+        psum_line_vld_cnt <= (psum_line_vld_cnt_max_vld) ? 0 : psum_line_vld_cnt + 1'b1;
     end
 end
 
-assign o_psum_end = psum_line_vld_cnt_max_val;
+assign o_psum_end = psum_line_vld_cnt_max_vld;
 
 //// Control logic
 wire                    enb;

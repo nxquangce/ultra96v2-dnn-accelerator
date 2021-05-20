@@ -39,7 +39,7 @@ module psum_accum_ctrl(
     memctrl0_radd,
     memctrl0_rden,
     memctrl0_odat,
-    memctrl0_oval,
+    memctrl0_ovld,
 
     i_conf_weightinterval,
     i_conf_outputsize,
@@ -57,7 +57,7 @@ module psum_accum_ctrl(
     // memctrl1_radd,
     // memctrl1_rden,
     // memctrl1_odat,
-    // memctrl1_oval,
+    // memctrl1_ovld,
 
     // memctrl2_wadd,
     // memctrl2_wren,
@@ -65,7 +65,7 @@ module psum_accum_ctrl(
     // memctrl2_radd,
     // memctrl2_rden,
     // memctrl2_odat,
-    // memctrl2_oval,
+    // memctrl2_ovld,
 
     // memctrl3_wadd,
     // memctrl3_wren,
@@ -73,7 +73,7 @@ module psum_accum_ctrl(
     // memctrl3_radd,
     // memctrl3_rden,
     // memctrl3_odat,
-    // memctrl3_oval
+    // memctrl3_ovld
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -107,7 +107,7 @@ output [DATA_WIDTH - 1 : 0] memctrl0_idat;
 output [ADDR_WIDTH - 1 : 0] memctrl0_radd;
 output                      memctrl0_rden;
 input  [DATA_WIDTH - 1 : 0] memctrl0_odat;
-input                       memctrl0_oval;
+input                       memctrl0_ovld;
 
 input   [REG_WIDTH - 1 : 0] i_conf_weightinterval;
 input   [REG_WIDTH - 1 : 0] i_conf_outputsize;
@@ -125,7 +125,7 @@ output  [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
 // output [ADDR_WIDTH - 1 : 0] memctrl1_radd;
 // output                      memctrl1_rden;
 // input  [DATA_WIDTH - 1 : 0] memctrl1_odat;
-// input                       memctrl1_oval;
+// input                       memctrl1_ovld;
 
 // output [ADDR_WIDTH - 1 : 0] memctrl2_wadd;
 // output                      memctrl2_wren;
@@ -133,7 +133,7 @@ output  [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
 // output [ADDR_WIDTH - 1 : 0] memctrl2_radd;
 // output                      memctrl2_rden;
 // input  [DATA_WIDTH - 1 : 0] memctrl2_odat;
-// input                       memctrl2_oval;
+// input                       memctrl2_ovld;
 
 // output [ADDR_WIDTH - 1 : 0] memctrl3_wadd;
 // output                      memctrl3_wren;
@@ -141,7 +141,7 @@ output  [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
 // output [ADDR_WIDTH - 1 : 0] memctrl3_radd;
 // output                      memctrl3_rden;
 // input  [DATA_WIDTH - 1 : 0] memctrl3_odat;
-// input                       memctrl3_oval;
+// input                       memctrl3_ovld;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -218,7 +218,7 @@ always @(posedge clk) begin
         psum_cache[2] <= 0;
         psum_cache[3] <= 0;
     end
-    else if (memctrl0_oval) begin
+    else if (psum_kn0_vld) begin
         psum_cache[0] <= psum_kn0_dat;
         psum_cache[1] <= psum_kn1_dat;
         psum_cache[2] <= psum_kn2_dat;
@@ -233,7 +233,7 @@ always @(posedge clk) begin
         wdat_cache[2] <= 0;
         wdat_cache[3] <= 0;
     end
-    else if (memctrl0_oval) begin
+    else if (memctrl0_ovld) begin
         wdat_cache[0] <= memctrl0_odat[BIT_WIDTH * 1 - 1 : 0] + psum_cache[0];
         wdat_cache[1] <= memctrl0_odat[BIT_WIDTH * 2 - 1 : BIT_WIDTH * 1] + psum_cache[1];
         wdat_cache[2] <= memctrl0_odat[BIT_WIDTH * 3 - 1 : BIT_WIDTH * 2] + psum_cache[2];
@@ -242,7 +242,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    wr_enab <= memctrl0_oval;
+    wr_enab <= memctrl0_ovld;
 end
 
 assign memctrl0_idat = {wdat_cache[3], wdat_cache[2], wdat_cache[1], wdat_cache[0]};
@@ -274,7 +274,8 @@ assign done_vld = kernel_done_cnt_max_vld & psum_out_cnt_max_vld;
 always @(posedge clk) begin
     if (rst | init) begin
         kernel_done_cnt <= 0;
-    end if (psum_out_cnt_max_vld) begin
+    end
+    else if (psum_out_cnt_max_vld) begin
         kernel_done_cnt <= (kernel_done_cnt_max_vld) ? 0 : kernel_done_cnt + 3'd4;
     end
 end
