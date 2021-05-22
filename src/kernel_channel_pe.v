@@ -31,6 +31,7 @@ module kernel_channel_pe(
     // i_psum_vld,
     o_psum,
     o_psum_vld,
+    i_conf_neg_enb,
     err_psum_vld
     );
 
@@ -53,6 +54,7 @@ input  wire                                                  i_weight_vld;
 // input  wire                                     i_psum_vld;
 output wire [(BIT_WIDTH * 2 * NUM_KERNEL          ) - 1 : 0] o_psum;
 output wire [NUM_KERNEL - 1 : 0]                             o_psum_vld;
+input  wire                                                  i_conf_neg_enb;
 output reg  [REG_WIDTH - 1 : 0]                              err_psum_vld;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -63,6 +65,10 @@ wire [BIT_WIDTH * 2 - 1 : 0] i_psum_kn   [NUM_KERNEL  - 1 : 0];
 wire [BIT_WIDTH * 2 - 1 : 0] o_psum_kn   [NUM_KERNEL  - 1 : 0][NUM_CHANNEL - 1 : 0];
 
 wire [NUM_CHANNEL - 1 : 0] o_psum_vld_kc [NUM_KERNEL - 1 : 0];
+
+wire signbit;
+
+assign signbit = i_conf_neg_enb;
 
 // Split data into channels
 assign i_data_ch[0]   = i_data[BIT_WIDTH     - 1 : 0];
@@ -97,11 +103,11 @@ generate
         pe i_pe_0(
             .clk            (clk),
             .rst            (rst),
-            .i_data         (i_data_ch[0]),
+            .i_data         ({signbit, i_data_ch[0]}),
             .i_data_vld     (i_data_vld),
-            .i_weight       (i_weight_kn[idxK][0]),
+            .i_weight       ({signbit, i_weight_kn[idxK][0]}),
             .i_weight_vld   (i_weight_vld),
-            .i_psum         (i_psum_kn[idxK]),
+            .i_psum         ({{4{signbit}}, i_psum_kn[idxK]}),
             // .i_psum_vld     (i_psum_vld),
             .o_psum         (o_psum_kn[idxK][0]),
             .o_psum_vld     (o_psum_vld_kc[idxK][0])
@@ -114,9 +120,9 @@ generate
             pe i_pe(
                 .clk            (clk),
                 .rst            (rst),
-                .i_data         (i_data_ch[idxC]),
+                .i_data         ({signbit, i_data_ch[idxC]}),
                 .i_data_vld     (i_data_vld),
-                .i_weight       (i_weight_kn[idxK][idxC]),
+                .i_weight       ({signbit, i_weight_kn[idxK][idxC]}),
                 .i_weight_vld   (i_weight_vld),
                 .i_psum         (o_psum_kn[idxK][idxC - 1]),
                 // .i_psum_vld     (i_psum_vld),

@@ -162,6 +162,8 @@ wire                                     engine_o_psum_kcpe0_vld;
 wire                                     engine_o_psum_kcpe1_vld;
 wire                                     engine_o_psum_kcpe2_vld;
 
+reg                     neg_enb;
+
 // Activation input buffer
 input_buffer 
     #(
@@ -253,6 +255,7 @@ kernel_channel_pe_0
     // .i_psum_vld     (),
     .o_psum         (engine_o_psum_kcpe0),
     .o_psum_vld     (engine_o_psum_kcpe0_vld),
+    .i_conf_neg_enb (neg_enb),
     .err_psum_vld   ()
     );
 
@@ -276,6 +279,7 @@ kernel_channel_pe_1
     // .i_psum_vld     (),
     .o_psum         (engine_o_psum_kcpe1),
     .o_psum_vld     (engine_o_psum_kcpe1_vld),
+    .i_conf_neg_enb (neg_enb),
     .err_psum_vld   ()
     );
 
@@ -299,6 +303,7 @@ kernel_channel_pe_2
     // .i_psum_vld     (),
     .o_psum         (engine_o_psum_kcpe2),
     .o_psum_vld     (engine_o_psum_kcpe2_vld),
+    .i_conf_neg_enb (neg_enb),
     .err_psum_vld   ()
     );
 
@@ -371,7 +376,7 @@ end
 assign o_psum_end = psum_line_vld_cnt_max_vld;
 
 //// Control logic
-wire                    enb;
+reg                     enb;
 reg                     init;
 reg                     odata_req_reg;
 reg                     idata_req_reg;
@@ -382,7 +387,10 @@ reg [REG_WIDTH - 1 : 0] odata_req_cnt;
 wire                    odata_req_cnt_max_vld;
 wire                    odata_req_cnt_premax_vld;
 
-assign enb = i_conf_ctrl[0];
+always @(posedge clk) begin
+    enb <= i_conf_ctrl[0];
+    neg_enb <= i_conf_ctrl[3];
+end
 
 // Data control
 always @(posedge clk) begin

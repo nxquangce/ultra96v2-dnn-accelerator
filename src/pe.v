@@ -33,8 +33,8 @@ module pe (
     o_psum_vld
     );
 
-parameter BIT_WIDTH = 8;
-parameter MUL_LAT   = 3;
+parameter BIT_WIDTH = 9;
+parameter MUL_LAT   = 4;
 
 input  wire                         clk;
 input  wire                         rst;
@@ -92,9 +92,10 @@ always @(posedge clk) begin
         o_psum_vld_reg[1] <= o_psum_vld_reg[0];
         o_psum_vld_reg[2] <= o_psum_vld_reg[1];
         o_psum_vld_reg[3] <= o_psum_vld_reg[2];
+        o_psum_vld_reg[4] <= o_psum_vld_reg[3];
     end
 end
 
-assign o_psum_vld = o_psum_vld_reg[3];
+assign o_psum_vld = o_psum_vld_reg[MUL_LAT];
 
 endmodule

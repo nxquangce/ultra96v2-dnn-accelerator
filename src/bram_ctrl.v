@@ -42,7 +42,8 @@ module bram_ctrl(
 parameter DAT_WIDTH     = 32;
 parameter ADDR_WIDTH    = 32;
 
-parameter ADDR_MODE     = 0; 
+parameter ADDR_MODE     = 0;
+parameter MEM_DELAY     = 2;
 
 localparam NUM_BYTE     = 4;
 
@@ -68,14 +69,14 @@ output                      mem_rst;
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
 reg [DAT_WIDTH - 1 : 0] odat_reg; 
-reg                     odat_val_reg;
+reg [MEM_DELAY - 1 : 0] odat_val_reg;
 
 assign mem_enb = 1'b1;
 assign mem_rst = 1'b0;
 assign mem_addr = addr << ADDR_MODE;
 assign mem_wren = {4{wren}};
 assign mem_idat = idat;
-assign oval = odat_val_reg;
+assign oval = odat_val_reg[MEM_DELAY - 1 ];
 assign odat = (oval) ? mem_odat : odat_reg;
 
 always @(posedge clk) begin
@@ -88,7 +89,8 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    odat_val_reg <= rden;
+    odat_val_reg[0] <= rden;
+    odat_val_reg[1] <= odat_val_reg[0];
 end
 
 endmodule

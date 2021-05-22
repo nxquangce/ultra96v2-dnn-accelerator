@@ -83,7 +83,7 @@ parameter REG_WIDTH     = 32;
 
 parameter DATA_WIDTH    = 32;
 parameter ADDR_WIDTH    = 32;
-parameter MEM_DELAY     = 1;
+parameter MEM_DELAY     = 2;
 
 parameter NUM_KERNEL    = 4;
 
@@ -150,8 +150,8 @@ reg [ADDR_WIDTH - 1 : 0] base_addr;
 reg [ADDR_WIDTH - 1 : 0] rd_addr;
 reg [ADDR_WIDTH - 1 : 0] wr_addr;
 reg                      wr_enab;
-reg [ADDR_WIDTH - 1 : 0] addr_cache;
-reg  [BIT_WIDTH - 1 : 0] psum_cache [NUM_KERNEL - 1 : 0];
+reg [ADDR_WIDTH - 1 : 0] addr_cache [MEM_DELAY - 1 : 0];
+reg  [BIT_WIDTH - 1 : 0] psum_cache [NUM_KERNEL - 1 : 0][MEM_DELAY - 1 : 0];
 reg  [BIT_WIDTH - 1 : 0] wdat_cache [NUM_KERNEL - 1 : 0];
 
 reg  [REG_WIDTH - 1 : 0] psum_out_cnt;
@@ -191,11 +191,13 @@ end
 always @(posedge clk) begin
     if (rst) begin
         wr_addr <= 0;
-        addr_cache <= 0;
+        addr_cache[0] <= 0;
+        addr_cache[1] <= 0;
     end
     else begin
-        addr_cache <= rd_addr;
-        wr_addr <= addr_cache;
+        addr_cache[0] <= rd_addr;
+        addr_cache[1] <= addr_cache[0];
+        wr_addr <= addr_cache[1];
     end
 end
 
@@ -213,16 +215,24 @@ assign memctrl0_wadd = wr_addr;
 
 always @(posedge clk) begin
     if (rst) begin
-        psum_cache[0] <= 0;
-        psum_cache[1] <= 0;
-        psum_cache[2] <= 0;
-        psum_cache[3] <= 0;
+        psum_cache[0][0] <= 0;
+        psum_cache[1][0] <= 0;
+        psum_cache[2][0] <= 0;
+        psum_cache[3][0] <= 0;
+        psum_cache[0][1] <= 0;
+        psum_cache[1][1] <= 0;
+        psum_cache[2][1] <= 0;
+        psum_cache[3][1] <= 0;
     end
     else if (psum_kn0_vld) begin
-        psum_cache[0] <= psum_kn0_dat;
-        psum_cache[1] <= psum_kn1_dat;
-        psum_cache[2] <= psum_kn2_dat;
-        psum_cache[3] <= psum_kn3_dat;
+        psum_cache[0][0] <= psum_kn0_dat;
+        psum_cache[1][0] <= psum_kn1_dat;
+        psum_cache[2][0] <= psum_kn2_dat;
+        psum_cache[3][0] <= psum_kn3_dat;
+        psum_cache[0][1] <= psum_cache[0][0];
+        psum_cache[1][1] <= psum_cache[1][0];
+        psum_cache[2][1] <= psum_cache[2][0];
+        psum_cache[3][1] <= psum_cache[3][0];
     end
 end
 
@@ -234,10 +244,10 @@ always @(posedge clk) begin
         wdat_cache[3] <= 0;
     end
     else if (memctrl0_ovld) begin
-        wdat_cache[0] <= memctrl0_odat[BIT_WIDTH * 1 - 1 : 0] + psum_cache[0];
-        wdat_cache[1] <= memctrl0_odat[BIT_WIDTH * 2 - 1 : BIT_WIDTH * 1] + psum_cache[1];
-        wdat_cache[2] <= memctrl0_odat[BIT_WIDTH * 3 - 1 : BIT_WIDTH * 2] + psum_cache[2];
-        wdat_cache[3] <= memctrl0_odat[BIT_WIDTH * 4 - 1 : BIT_WIDTH * 3] + psum_cache[3];
+        wdat_cache[0] <= memctrl0_odat[BIT_WIDTH * 1 - 1 :             0] + psum_cache[0][1];
+        wdat_cache[1] <= memctrl0_odat[BIT_WIDTH * 2 - 1 : BIT_WIDTH * 1] + psum_cache[1][1];
+        wdat_cache[2] <= memctrl0_odat[BIT_WIDTH * 3 - 1 : BIT_WIDTH * 2] + psum_cache[2][1];
+        wdat_cache[3] <= memctrl0_odat[BIT_WIDTH * 4 - 1 : BIT_WIDTH * 3] + psum_cache[3][1];
     end
 end
 

@@ -73,8 +73,8 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    base_addr_1 <= (((i_conf_inputshape[7:0] << 1) + i_conf_inputshape[7:0]) >> 2) - 1'b1;
-    base_addr_2 <= ((((i_conf_inputshape[7:0] << 1) << 1) + (i_conf_inputshape[7:0] << 1)) >> 2) - 1'b1;
+    base_addr_1 <= (((i_conf_inputshape[7:0] << 1) + i_conf_inputshape[7:0]) >> 2);
+    base_addr_2 <= ((((i_conf_inputshape[7:0] << 1) << 1) + (i_conf_inputshape[7:0] << 1)) >> 2);
 end
 
 always @(posedge clk) begin

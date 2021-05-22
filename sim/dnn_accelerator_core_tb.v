@@ -117,14 +117,14 @@ dnn_accelerator_core dut(
     .mem_rst_6              (mem_rst[6])
     );
 
-data_bram_tb_sim bram0_data(
+rtest_data_bram_tb_sim bram0_data(
     .clk                    (clk),
     .rst                    (rst),
     .irdaddr                (mem_addr[0]),
     .odat                   (mem_odat[0])
     );
 
-data_bram_tb_sim bram1_weight0(
+rtest_weight_bram_tb_sim bram1_weight0(
     .clk                    (clk),
     .rst                    (rst),
     .irdaddr                (mem_addr[1]),

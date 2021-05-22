@@ -348,7 +348,8 @@ pixel_concat pixel_concat_inst(
 
 bram_ctrl
     #(
-    .ADDR_MODE              (2)
+    .ADDR_MODE              (2),
+    .MEM_DELAY              (1)
     )
 data_bram_ctrl_inst(
     .clk                    (clk),
@@ -399,7 +400,8 @@ weight_req weight_req_inst(
 
 bram_ctrl
     #(
-    .ADDR_MODE              (2)
+    .ADDR_MODE              (2),
+    .MEM_DELAY              (1)
     )
 weight_bram_ctrl_inst_0(
     .clk                    (clk),
@@ -420,7 +422,8 @@ weight_bram_ctrl_inst_0(
 
 bram_ctrl
     #(
-    .ADDR_MODE              (2)
+    .ADDR_MODE              (2),
+    .MEM_DELAY              (1)
     )
 weight_bram_ctrl_inst_1(
     .clk                    (clk),
@@ -441,7 +444,8 @@ weight_bram_ctrl_inst_1(
 
 bram_ctrl
     #(
-    .ADDR_MODE              (2)
+    .ADDR_MODE              (2),
+    .MEM_DELAY              (1)
     )
 weight_bram_ctrl_inst_2(
     .clk                    (clk),
@@ -462,7 +466,8 @@ weight_bram_ctrl_inst_2(
 
 bram_ctrl
     #(
-    .ADDR_MODE              (2)
+    .ADDR_MODE              (2),
+    .MEM_DELAY              (1)
     )
 weight_bram_ctrl_inst_3(
     .clk                    (clk),
@@ -482,7 +487,12 @@ weight_bram_ctrl_inst_3(
     );
 
 // Psum accum
-bram_ctrl psum_bram_ctrl_inst_0(
+bram_ctrl
+    #(
+    .ADDR_MODE              (0),
+    .MEM_DELAY              (2)
+    )
+psum_bram_ctrl_inst_0(
     .clk                    (clk),
     .rst                    (rst),
     .addr                   (core_memctrl0_radd),
@@ -499,7 +509,12 @@ bram_ctrl psum_bram_ctrl_inst_0(
     .mem_rst                (mem_rst_5)
     );
 
-bram_ctrl psum_bram_ctrl_inst_1(
+bram_ctrl
+    #(
+    .ADDR_MODE              (0),
+    .MEM_DELAY              (2)
+    )
+psum_bram_ctrl_inst_1(
     .clk                    (clk),
     .rst                    (rst),
     .addr                   (core_memctrl0_wadd),
