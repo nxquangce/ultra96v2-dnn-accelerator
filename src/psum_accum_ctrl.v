@@ -219,16 +219,23 @@ always @(posedge clk) begin
         psum_cache[1][0] <= 0;
         psum_cache[2][0] <= 0;
         psum_cache[3][0] <= 0;
-        psum_cache[0][1] <= 0;
-        psum_cache[1][1] <= 0;
-        psum_cache[2][1] <= 0;
-        psum_cache[3][1] <= 0;
     end
     else if (psum_kn0_vld) begin
         psum_cache[0][0] <= psum_kn0_dat;
         psum_cache[1][0] <= psum_kn1_dat;
         psum_cache[2][0] <= psum_kn2_dat;
         psum_cache[3][0] <= psum_kn3_dat;
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        psum_cache[0][1] <= 0;
+        psum_cache[1][1] <= 0;
+        psum_cache[2][1] <= 0;
+        psum_cache[3][1] <= 0;
+    end
+    else begin
         psum_cache[0][1] <= psum_cache[0][0];
         psum_cache[1][1] <= psum_cache[1][0];
         psum_cache[2][1] <= psum_cache[2][0];
