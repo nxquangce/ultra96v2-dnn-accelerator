@@ -6,9 +6,11 @@ from PIL import Image
 import numpy as np
 import tflite_runtime.interpreter as tflite
 
+import torch
+
 import time
 
-overlay_name = "zynqmpsoc_conv_1clk_dbg_20210523_1722"
+overlay_name = "zynqmpsoc_conv_dbg_20210526_0130"
 
 print("=== Config hardware ===")
 print(overlay_name)
@@ -24,7 +26,8 @@ CDMA_BRAM_WEIGHT0_ADDRESS = 0x90000000
 CDMA_BRAM_WEIGHT1_ADDRESS = 0x90001000
 CDMA_BRAM_WEIGHT2_ADDRESS = 0x90002000
 CDMA_BRAM_WEIGHT3_ADDRESS = 0x90003000
-CDMA_BRAM_OUTPUT_ADDRESS = 0xA0000000
+CDMA_BRAM_OUTPUT0_ADDRESS = 0xA0000000
+CDMA_BRAM_OUTPUT1_ADDRESS = 0xB0000000
 
 MMIO_CONFIG_REG_BASE_ADDRESS = 0x00A0001000
 MMIO_CONFIG_REG_ADDRESS_RANGE = 0x1000
@@ -98,6 +101,56 @@ def reset(cdma):
     cdmacr = changebit(cdmacr, 2, 1)
     print(cdmacr)
     cdma.write(Cdma.CDMACR, cdmacr)
+    
+def tconv2d():
+    print("==== Load weight ====")
+    print(model_file)
+    print()
+    
+    time0 = time.time()
+    
+    interpreter = tflite.Interpreter(model_path=model_file)
+    interpreter.allocate_tensors()
+    
+    weight_l1 = interpreter.get_tensor(8)
+    weight_l1_0_3 = weight_l1[0:3]
+    
+    t_weight_l1_0_3 = torch.from_numpy(weight_l1_0_3)
+    t_weight_l1_0_3 = np.transpose(t_weight_l1_0_3, (0, 3, 1, 2))
+    
+    print("==== Load input ====")
+    
+    time1 = time.time()
+    
+    image = Image.open("input224.jpg")
+    data = np.asarray(image)
+    input_data = np.expand_dims(data, 0)  # shape (1, y_pixels, x_pixels, n_bands)
+    input_data = np.transpose(input_data, (0, 3, 1, 2))
+
+    t_input_data = torch.from_numpy(input_data)
+    
+    time2 = time.time()
+    
+    print("==== Perform PS Conv ====")
+    
+    t_output = torch.nn.functional.conv2d(t_input_data, t_weight_l1_0_3, bias=None, stride=1, padding=0, dilation=1, groups=1)
+    
+    time3 = time.time()
+    
+    print(t_output)
+    
+    print("==============================================")
+    
+    print("Load weight time: %s seconds" % (time1 - time0))
+    print("Load data time  : %s seconds" % (time2 - time1))
+    print("----------------------------------------------")
+    print("Total load time : %s seconds" % (time2 - time1))
+    print()
+    print("PS Conv time    : %s seconds" % (time3 - time2))
+    print("==============================================")
+    print("Total time      : %s seconds" % (time3 - time0))
+    print()
+    
 
 def main():
     print("==== Load model ====")
@@ -227,7 +280,6 @@ def main():
     end_time_load2 = time.time()
     
     print("Done")
-    print("Processing time: %s seconds" % (end_time_load2 - start_time2))
     print()
     print("=== Dbg Status ===")
     
@@ -262,25 +314,31 @@ def main():
     print("dbg_psumacc_wr_addr             : ", dbg_psumacc_wr_addr)
     print()
     
-#     reg.write(0, 6) # allow ps access output memory
+    reg.write(0, 6) # allow ps access output memory
     
     print("Transfer output to PS")
     output_buffer = allocate(shape=(222,222,4), dtype=np.uint8)
     output_size = 222 * 222 * 4
-    transfer(cdma, CDMA_BRAM_OUTPUT_ADDRESS, output_buffer.physical_address, output_size)
+#     transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address, output_size)
+    transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address, 32768*4)
+    transfer(cdma, CDMA_BRAM_OUTPUT1_ADDRESS, output_buffer.physical_address + 32768*4, output_size - 32768*4)
     
     end_time2 = time.time()
     
-    print("Reshape             : %s seconds" % (end_time_load1 - start_time1))
     
-    print()
-    print("Transfer output time: %s seconds" % (end_time2 - end_time_load2))
-    print()
-    
+       
+    print("Reshape                      : %s seconds" % (end_time_load1 - start_time1))
     print("Transfer data and weight time: %s seconds" % (end_time1 - end_time_load0 - (end_time_load1 - start_time1)))
+    print()
+    
+    print("Processing time              : %s seconds" % (end_time_load2 - start_time2))
+    print()
+    
+    print("Transfer output time         : %s seconds" % (end_time2 - end_time_load2))
+    print()
     
     print("Total except load data to DDR: %s s" % (end_time2 - end_time_load0))
-    print("Total %s s" % (end_time2 - start_time0))
+    print("Total                        : %s s" % (end_time2 - start_time0))
     
     
 #     f = open("output/conv_l1.txt", "w")
@@ -307,3 +365,4 @@ def main():
 #             np.savetxt(outfile, slice_2d, fmt='% 4d')
 
 main()
+# tconv2d()
