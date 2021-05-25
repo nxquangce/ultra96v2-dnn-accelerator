@@ -80,6 +80,22 @@ module dnn_accelerator_core(
     mem_enb_7,
     mem_rst_7,
 
+    mem_addr_8,
+    mem_idat_8,
+    mem_odat_8,
+    mem_wren_8,
+    mem_enb_8,
+    mem_rst_8,
+
+`ifdef ENABLE_DUPLICATE_OUTPUT_BRAM
+    mem_addr_9,
+    mem_idat_9,
+    mem_odat_9,
+    mem_wren_9,
+    mem_enb_9,
+    mem_rst_9,
+`endif
+
     // S_AXI_ACLK,
     // S_AXI_ARESETN,
     // S_AXI_AWADDR,
@@ -142,6 +158,9 @@ parameter NUM_KCPE      = 3;    // Number of kernel-channel PE
 
 parameter IN_INPUT_DAT_WIDTH  = BIT_WIDTH * NUM_CHANNEL;
 parameter IN_WEIGHT_DAT_WIDTH = BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL;
+
+parameter OUTPUT_MEM_ADDR_MODE = 2;
+parameter OUTPUT_MEM_DELAY     = 1;
 
 // AXI
 // Width of S_AXI data bus
@@ -210,6 +229,22 @@ output   [NUM_BYTE - 1 : 0] mem_wren_7;
 output                      mem_enb_7;
 output                      mem_rst_7;
 
+output [ADDR_WIDTH - 1 : 0] mem_addr_8;
+output [DATA_WIDTH - 1 : 0] mem_idat_8;
+input  [DATA_WIDTH - 1 : 0] mem_odat_8;
+output   [NUM_BYTE - 1 : 0] mem_wren_8;
+output                      mem_enb_8;
+output                      mem_rst_8;
+
+`ifdef ENABLE_DUPLICATE_OUTPUT_BRAM
+output [ADDR_WIDTH - 1 : 0] mem_addr_9;
+output [DATA_WIDTH - 1 : 0] mem_idat_9;
+input  [DATA_WIDTH - 1 : 0] mem_odat_9;
+output   [NUM_BYTE - 1 : 0] mem_wren_9;
+output                      mem_enb_9;
+output                      mem_rst_9;
+`endif
+
 // Config regfile AXI
 //input  wire                                S_AXI_ACLK;
 //input  wire                                S_AXI_ARESETN;
@@ -277,7 +312,11 @@ output [REG_WIDTH - 1 : 0] dbg_datareq_addr_reg;
 
 
 // Core
-accelerator_core accelerator_core_inst(
+accelerator_core
+    #(
+    .OUTPUT_MEM_DELAY       (OUTPUT_MEM_DELAY)
+    )
+accelerator_core_inst(
     .clk                    (clk),
     .rst                    (rst),
     .o_data_req             (core_o_data_req),
@@ -487,20 +526,60 @@ weight_bram_ctrl_inst_3(
     );
 
 // Psum accum
+wire          [ADDR_WIDTH - 1 : 0] bramctrl1_wadd;
+wire                               bramctrl1_wren;
+wire          [ADDR_WIDTH - 1 : 0] bramctrl0_radd;
+wire                               bramctrl0_rden;
+wire          [DATA_WIDTH - 1 : 0] bramctrl0_odat;
+wire                               bramctrl0_ovld;
+
+wire          [ADDR_WIDTH - 1 : 0] bramctrl3_wadd;
+wire                               bramctrl3_wren;
+wire          [ADDR_WIDTH - 1 : 0] bramctrl2_radd;
+wire                               bramctrl2_rden;
+wire          [DATA_WIDTH - 1 : 0] bramctrl2_odat;
+wire                               bramctrl2_ovld;
+
+output_mem_addr_decoder output_mem_addr_decoder_inst(
+    .clk                    (clk),
+
+    .psumctrl_wadd          (core_memctrl0_wadd),
+    .psumctrl_wren          (core_memctrl0_wren),
+    .psumctrl_radd          (core_memctrl0_radd),
+    .psumctrl_rden          (core_memctrl0_rden),
+    .psumctrl_odat          (core_memctrl0_odat),
+    .psumctrl_ovld          (core_memctrl0_ovld),
+
+    .bramctrl_addr_rd_0     (bramctrl0_radd),
+    .bramctrl_rden_rd_0     (bramctrl0_rden),
+    .bramctrl_odat_rd_0     (bramctrl0_odat),
+    .bramctrl_oval_rd_0     (bramctrl0_ovld),
+    .bramctrl_addr_wr_0     (bramctrl1_wadd),
+    .bramctrl_wren_wr_0     (bramctrl1_wren),
+
+    .bramctrl_addr_rd_1     (bramctrl2_radd),
+    .bramctrl_rden_rd_1     (bramctrl2_rden),
+    .bramctrl_odat_rd_1     (bramctrl2_odat),
+    .bramctrl_oval_rd_1     (bramctrl2_ovld),
+    .bramctrl_addr_wr_1     (bramctrl3_wadd),
+    .bramctrl_wren_wr_1     (bramctrl3_wren)
+
+    );
+
 bram_ctrl
     #(
-    .ADDR_MODE              (0),
-    .MEM_DELAY              (2)
+    .ADDR_MODE              (OUTPUT_MEM_ADDR_MODE),
+    .MEM_DELAY              (OUTPUT_MEM_DELAY)
     )
 psum_bram_ctrl_inst_0(
     .clk                    (clk),
     .rst                    (rst),
-    .addr                   (core_memctrl0_radd),
+    .addr                   (bramctrl0_radd),
     .wren                   (0),
     .idat                   (0),
-    .rden                   (core_memctrl0_rden),
-    .odat                   (core_memctrl0_odat),
-    .oval                   (core_memctrl0_ovld),
+    .rden                   (bramctrl0_rden),
+    .odat                   (bramctrl0_odat),
+    .oval                   (bramctrl0_ovld),
     .mem_addr               (mem_addr_5),
     .mem_idat               (mem_idat_5),
     .mem_odat               (mem_odat_5),
@@ -511,14 +590,14 @@ psum_bram_ctrl_inst_0(
 
 bram_ctrl
     #(
-    .ADDR_MODE              (0),
-    .MEM_DELAY              (2)
+    .ADDR_MODE              (OUTPUT_MEM_ADDR_MODE),
+    .MEM_DELAY              (OUTPUT_MEM_DELAY)
     )
 psum_bram_ctrl_inst_1(
     .clk                    (clk),
     .rst                    (rst),
-    .addr                   (core_memctrl0_wadd),
-    .wren                   (core_memctrl0_wren),
+    .addr                   (bramctrl1_wadd),
+    .wren                   (bramctrl1_wren),
     .idat                   (core_memctrl0_idat),
     .rden                   (0),
     .odat                   (),
@@ -532,11 +611,57 @@ psum_bram_ctrl_inst_1(
     );
 
 
-assign mem_addr_7 = mem_addr_6 << 2;
-assign mem_idat_7 = mem_idat_6;
-assign mem_wren_7 = mem_wren_6;
-assign mem_enb_7 = mem_enb_6;
-assign mem_rst_7 = mem_rst_6;
+bram_ctrl
+    #(
+    .ADDR_MODE              (OUTPUT_MEM_ADDR_MODE),
+    .MEM_DELAY              (OUTPUT_MEM_DELAY)
+    )
+psum_bram_ctrl_inst_2(
+    .clk                    (clk),
+    .rst                    (rst),
+    .addr                   (bramctrl2_radd),
+    .wren                   (0),
+    .idat                   (0),
+    .rden                   (bramctrl2_rden),
+    .odat                   (bramctrl2_odat),
+    .oval                   (bramctrl2_ovld),
+    .mem_addr               (mem_addr_7),
+    .mem_idat               (mem_idat_7),
+    .mem_odat               (mem_odat_7),
+    .mem_wren               (mem_wren_7),
+    .mem_enb                (mem_enb_7),
+    .mem_rst                (mem_rst_7)
+    );
+
+bram_ctrl
+    #(
+    .ADDR_MODE              (OUTPUT_MEM_ADDR_MODE),
+    .MEM_DELAY              (OUTPUT_MEM_DELAY)
+    )
+psum_bram_ctrl_inst_3(
+    .clk                    (clk),
+    .rst                    (rst),
+    .addr                   (bramctrl3_wadd),
+    .wren                   (bramctrl3_wren),
+    .idat                   (core_memctrl0_idat),
+    .rden                   (0),
+    .odat                   (),
+    .oval                   (),
+    .mem_addr               (mem_addr_8),
+    .mem_idat               (mem_idat_8),
+    .mem_odat               (mem_odat_8),
+    .mem_wren               (mem_wren_8),
+    .mem_enb                (mem_enb_8),
+    .mem_rst                (mem_rst_8)
+    );
+
+`ifdef ENABLE_DUPLICATE_OUTPUT_BRAM
+assign mem_addr_9 = mem_addr_6 << 2;
+assign mem_idat_9 = mem_idat_6;
+assign mem_wren_9 = mem_wren_6;
+assign mem_enb_9 = mem_enb_6;
+assign mem_rst_9 = mem_rst_6;
+`endif
 
 // Config registers
 // config_regfile #

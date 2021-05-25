@@ -357,10 +357,7 @@ proc create_root_design { parentCell } {
      catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-    set_property -dict [ list \
-   CONFIG.C_S_AXI_ADDR_WIDTH {5} \
- ] $config_regfile_0
-
+  
   # Create instance: dnn_accelerator_core_0, and set properties
   set block_name dnn_accelerator_core
   set block_cell_name dnn_accelerator_core_0
@@ -372,10 +369,6 @@ proc create_root_design { parentCell } {
      return 1
    }
   
-  set_property -dict [ list \
-   CONFIG.POLARITY {ACTIVE_HIGH} \
- ] [get_bd_pins /dnn_accelerator_core_0/rst]
-
   # Create instance: proc_sys_reset_0, and set properties
   set proc_sys_reset_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 proc_sys_reset_0 ]
 
@@ -1869,6 +1862,19 @@ proc create_root_design { parentCell } {
   connect_bd_net -net config_regfile_0_reg4 [get_bd_pins config_regfile_0/reg4] [get_bd_pins dnn_accelerator_core_0/i_conf_kernelshape]
   connect_bd_net -net config_regfile_0_reg5 [get_bd_pins config_regfile_0/reg5] [get_bd_pins dnn_accelerator_core_0/i_conf_inputshape]
   connect_bd_net -net config_regfile_0_reg6 [get_bd_pins config_regfile_0/reg6] [get_bd_pins dnn_accelerator_core_0/i_conf_inputrstcnt]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_datareq_addr_reg [get_bd_pins config_regfile_0/ireg2] [get_bd_pins dnn_accelerator_core_0/dbg_datareq_addr_reg]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_datareq_knlinex_cnt [get_bd_pins config_regfile_0/ireg1] [get_bd_pins dnn_accelerator_core_0/dbg_datareq_knlinex_cnt]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_linekcpe_idata_req_cnt [get_bd_pins config_regfile_0/ireg5] [get_bd_pins dnn_accelerator_core_0/dbg_linekcpe_idata_req_cnt]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_linekcpe_kernel_done_cnt [get_bd_pins config_regfile_0/ireg9] [get_bd_pins dnn_accelerator_core_0/dbg_linekcpe_kernel_done_cnt]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_linekcpe_odata_req_cnt [get_bd_pins config_regfile_0/ireg6] [get_bd_pins dnn_accelerator_core_0/dbg_linekcpe_odata_req_cnt]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_linekcpe_psum_line_vld_cnt [get_bd_pins config_regfile_0/ireg4] [get_bd_pins dnn_accelerator_core_0/dbg_linekcpe_psum_line_vld_cnt]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_linekcpe_valid_knx_cnt [get_bd_pins config_regfile_0/ireg3] [get_bd_pins dnn_accelerator_core_0/dbg_linekcpe_valid_knx_cnt]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_linekcpe_weight_done_cnt [get_bd_pins config_regfile_0/ireg8] [get_bd_pins dnn_accelerator_core_0/dbg_linekcpe_weight_done_cnt]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_linekcpe_weight_line_req_cnt [get_bd_pins config_regfile_0/ireg7] [get_bd_pins dnn_accelerator_core_0/dbg_linekcpe_weight_line_req_cnt]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_psumacc_base_addr [get_bd_pins config_regfile_0/ireg10] [get_bd_pins dnn_accelerator_core_0/dbg_psumacc_base_addr]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_psumacc_psum_out_cnt [get_bd_pins config_regfile_0/ireg11] [get_bd_pins dnn_accelerator_core_0/dbg_psumacc_psum_out_cnt]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_psumacc_rd_addr [get_bd_pins config_regfile_0/ireg13] [get_bd_pins dnn_accelerator_core_0/dbg_psumacc_rd_addr]
+  connect_bd_net -net dnn_accelerator_core_0_dbg_psumacc_wr_addr [get_bd_pins config_regfile_0/ireg12] [get_bd_pins dnn_accelerator_core_0/dbg_psumacc_wr_addr]
   connect_bd_net -net dnn_accelerator_core_0_mem_addr_0 [get_bd_pins blk_mem_gen_0/addrb] [get_bd_pins dnn_accelerator_core_0/mem_addr_0]
   connect_bd_net -net dnn_accelerator_core_0_mem_addr_1 [get_bd_pins blk_mem_gen_1/addrb] [get_bd_pins dnn_accelerator_core_0/mem_addr_1]
   connect_bd_net -net dnn_accelerator_core_0_mem_addr_2 [get_bd_pins blk_mem_gen_2/addrb] [get_bd_pins dnn_accelerator_core_0/mem_addr_2]
@@ -1930,7 +1936,7 @@ proc create_root_design { parentCell } {
   create_bd_addr_seg -range 0x00080000 -offset 0xA0000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs axi_bram_ctrl_5/S_AXI/Mem0] SEG_axi_bram_ctrl_5_Mem0
   create_bd_addr_seg -range 0x80000000 -offset 0x00000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_LOW] SEG_zynq_ultra_ps_e_0_HP0_DDR_LOW
   create_bd_addr_seg -range 0x00001000 -offset 0xA0000000 [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axi_cdma_0/S_AXI_LITE/Reg] SEG_axi_cdma_0_Reg
-  create_bd_addr_seg -range 0x00001000 -offset 0xA0002000 [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs config_regfile_0/S_AXI/reg0] SEG_config_regfile_0_reg0
+  create_bd_addr_seg -range 0x00001000 -offset 0xA0001000 [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs config_regfile_0/S_AXI/reg0] SEG_config_regfile_0_reg0
 
   # Exclude Address Segments
   create_bd_addr_seg -range 0x01000000 -offset 0xFF000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_LPS_OCM] SEG_zynq_ultra_ps_e_0_HP0_LPS_OCM
@@ -1952,4 +1958,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 

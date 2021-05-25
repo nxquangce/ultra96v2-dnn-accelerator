@@ -42,8 +42,8 @@ module bram_ctrl(
 parameter DAT_WIDTH     = 32;
 parameter ADDR_WIDTH    = 32;
 
-parameter ADDR_MODE     = 0;
-parameter MEM_DELAY     = 2;
+parameter ADDR_MODE     = 2;
+parameter MEM_DELAY     = 1;
 
 localparam NUM_BYTE     = 4;
 
@@ -76,7 +76,7 @@ assign mem_rst = 1'b0;
 assign mem_addr = addr << ADDR_MODE;
 assign mem_wren = {4{wren}};
 assign mem_idat = idat;
-assign oval = odat_val_reg[MEM_DELAY - 1 ];
+assign oval = odat_val_reg[MEM_DELAY - 1];
 assign odat = (oval) ? mem_odat : odat_reg;
 
 always @(posedge clk) begin
