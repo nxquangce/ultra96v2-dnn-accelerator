@@ -54,6 +54,9 @@ parameter NUM_BYTE      = 4;
 
 parameter REG_WIDTH     = 32;
 
+parameter OUTPUT_MEM_ADDR_MODE = 2;
+localparam AXI_ADDR_MODE = 2 - OUTPUT_MEM_ADDR_MODE;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
 input                       clk;
@@ -103,7 +106,7 @@ end
 
 always @(*) begin
     if (psenb) begin
-        addra_reg = bram_addr_a;
+        addra_reg = bram_addr_a >> AXI_ADDR_MODE;
         clka_reg  = bram_clk_a;
         dina_reg  = bram_wrdata_a;
         ena_reg   = bram_en_a;
@@ -117,9 +120,9 @@ always @(*) begin
         addra_reg = mem_addr;
         clka_reg  = clk;
         dina_reg  = mem_idat;
-        ena_reg   = mem_wren;
-        rsta_reg  = mem_enb;
-        wea_reg   = mem_rst;
+        ena_reg   = mem_enb;
+        rsta_reg  = mem_rst;
+        wea_reg   = mem_wren;
 
         bram_rddata_a_reg = 0;
         mem_odat_reg      = douta;

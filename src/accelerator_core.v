@@ -83,6 +83,8 @@ parameter DATA_WIDTH    = 32;
 parameter IN_INPUT_DAT_WIDTH  = BIT_WIDTH * NUM_CHANNEL;
 parameter IN_WEIGHT_DAT_WIDTH = BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL;
 
+parameter OUTPUT_MEM_DELAY = 1;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
 input  wire                               clk;
@@ -187,7 +189,11 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .dbg_linekcpe_kernel_done_cnt       (dbg_linekcpe_kernel_done_cnt)
     );
 
-psum_accum_ctrl psum_accum_ctrl_0(
+psum_accum_ctrl
+    #(
+    .MEM_DELAY                  (OUTPUT_MEM_DELAY)
+    )
+psum_accum_ctrl_0(
     .clk                        (clk),
     .rst                        (rst_p),
     .psum_kn0_dat               (accum_i_psum[0]),
