@@ -31,7 +31,8 @@ module input_buffer(
     o_data_vld,
     data_counter,
     o_empty,
-    o_full
+    o_full,
+    o_half
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -39,8 +40,8 @@ module input_buffer(
 parameter BIT_WIDTH     = 8;
 parameter NUM_CHANNEL   = 3;
 parameter NUM_RDATA     = 3;
-parameter FF_DEPTH      = 8;
-parameter FF_ADDR_WIDTH = 3;
+parameter FF_DEPTH      = 16;
+parameter FF_ADDR_WIDTH = 4;
 
 parameter DAT_WIDTH     = BIT_WIDTH * NUM_CHANNEL;
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,6 +56,7 @@ output wire                                 o_data_vld;
 output wire [FF_ADDR_WIDTH : 0]             data_counter;
 output wire                                 o_empty;
 output wire                                 o_full;
+output wire                                 o_half;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -83,6 +85,7 @@ fifo_ch0
     .empty        (empty)
     );
 
+assign o_half = (data_counter > FF_DEPTH * 3 / 4);
 assign o_full = |full;
 assign o_empty = &empty;
 

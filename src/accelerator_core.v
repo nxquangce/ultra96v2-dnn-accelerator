@@ -212,6 +212,7 @@ psum_accum_ctrl_0(
     .memctrl0_rden              (memctrl0_rden),
     .memctrl0_odat              (memctrl0_odat),
     .memctrl0_ovld              (memctrl0_ovld),
+    .i_conf_ctrl                (i_conf_ctrl),
     .i_conf_weightinterval      (i_conf_weightinterval),
     .i_conf_outputsize          (i_conf_outputsize),
     .i_conf_kernelshape         (i_conf_kernelshape),

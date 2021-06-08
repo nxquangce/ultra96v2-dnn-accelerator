@@ -33,7 +33,7 @@ module psum_bram_tb_sim(
 parameter DATA_WIDTH = 32;
 parameter ADDR_WIDTH = 32;
 
-parameter MEM_DEPTH  = 100000;
+parameter MEM_DEPTH  = 400000;
 
 input                       clk;
 input                       rst;

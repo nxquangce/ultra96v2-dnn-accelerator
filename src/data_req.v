@@ -61,6 +61,20 @@ wire                            knlinex_cnt_max_vld;
 reg        [ADDR_WIDTH - 1 : 0] base_addr_1;
 reg        [ADDR_WIDTH - 1 : 0] base_addr_2;
 
+reg                             i_stall_cache;
+wire                            stall_cache_vld;
+
+assign stall_cache_vld = i_stall & (~i_req);
+
+always @(posedge clk) begin
+    if (rst | i_req) begin
+        i_stall_cache <= 0;
+    end
+    else if (stall_cache_vld) begin
+        i_stall_cache <= 1'b1;
+    end
+end
+
 assign knlinex_cnt_max_vld = (knlinex_cnt == (i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0] - 1'b1));
 
 always @(posedge clk) begin
@@ -93,7 +107,7 @@ always @(posedge clk) begin
     end
 end
 
-assign o_rden = i_req & ~i_stall;
+assign o_rden = i_req & ~i_stall & ~i_stall_cache;
 assign o_addr = addr_reg;
 
 // Debug

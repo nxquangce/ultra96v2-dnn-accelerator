@@ -131,6 +131,7 @@ wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0] engine_i_data_pos0;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0] engine_i_data_pos1;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0] engine_i_data_pos2;
 wire                                   buffer_o_data_full;
+wire                                   buffer_o_data_half;
 wire                                   buffer_o_data_empty;
 
 // Weight signals
@@ -163,6 +164,18 @@ wire                                     engine_o_psum_kcpe1_vld;
 wire                                     engine_o_psum_kcpe2_vld;
 
 reg                     neg_enb;
+reg                     con_enb;
+reg                     con_enb_cache;
+reg                     con_enb_vld;
+reg                     con_enb_vld_pp;
+
+// Detect rising edge of continue enable conf
+always @(posedge clk) begin
+    con_enb_cache <= con_enb;
+    con_enb_vld <= ~con_enb_cache & con_enb;
+    con_enb_vld_pp <= con_enb_vld;
+end
+
 
 // Activation input buffer
 input_buffer 
@@ -181,7 +194,8 @@ input_buffer_0(
     .o_data_vld         (buffer_o_data_vld),
     .data_counter       (),
     .o_full             (buffer_o_data_full),
-    .o_empty            (buffer_o_data_empty)
+    .o_empty            (buffer_o_data_empty),
+    .o_half             (buffer_o_data_half)
     );
 
 // Data in position
@@ -386,19 +400,21 @@ wire                    idata_end;
 reg [REG_WIDTH - 1 : 0] odata_req_cnt;
 wire                    odata_req_cnt_max_vld;
 wire                    odata_req_cnt_premax_vld;
+reg                     done;
 
 always @(posedge clk) begin
     enb <= i_conf_ctrl[0];
     neg_enb <= i_conf_ctrl[3];
+    con_enb <= i_conf_ctrl[4];
 end
 
 // Data control
 always @(posedge clk) begin
-    if (rst) begin
+    if (rst | done) begin
         odata_req_reg <= 0;
     end
     else if (enb) begin
-        odata_req_reg <= ~buffer_o_data_full;
+        odata_req_reg <= ~buffer_o_data_half;
     end
 end
 
@@ -427,10 +443,10 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (rst | idata_end) begin
+    if (rst | idata_end | done) begin
         idata_req_reg <= 1'b0;
     end
-    else if (i_weight_req) begin
+    else if (i_weight_req | con_enb_vld_pp) begin
         idata_req_reg <= 1'b1;
     end
 end
@@ -499,7 +515,6 @@ always @(posedge clk) begin
 end
 
 // Done control
-reg                                 done;
 reg                         [7 : 0] weight_done_cnt;
 wire                                weight_done_cnt_max_vld;
 reg             [REG_WIDTH - 1 : 0] kernel_done_cnt;
@@ -530,7 +545,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (rst | init) begin
+    if (rst | init | con_enb_vld) begin
         done <= 0;
     end
     else if (kernel_done_cnt_max_vld & kernel_end) begin

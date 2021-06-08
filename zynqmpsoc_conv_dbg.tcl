@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# config_regfile, dnn_accelerator_core, psum_bramctrl_bus_mux, psum_bramctrl_bus_mux
+# config_regfile, dnn_accelerator_core, psum_bramctrl_bus_mux, psum_bramctrl_bus_mux, psum_bramctrl_bus_mux, psum_bramctrl_bus_mux
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -167,6 +167,8 @@ config_regfile\
 dnn_accelerator_core\
 psum_bramctrl_bus_mux\
 psum_bramctrl_bus_mux\
+psum_bramctrl_bus_mux\
+psum_bramctrl_bus_mux\
 "
 
    set list_mods_missing ""
@@ -274,6 +276,18 @@ proc create_root_design { parentCell } {
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_6
 
+  # Create instance: axi_bram_ctrl_7, and set properties
+  set axi_bram_ctrl_7 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.0 axi_bram_ctrl_7 ]
+  set_property -dict [ list \
+   CONFIG.SINGLE_PORT_BRAM {1} \
+ ] $axi_bram_ctrl_7
+
+  # Create instance: axi_bram_ctrl_8, and set properties
+  set axi_bram_ctrl_8 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.0 axi_bram_ctrl_8 ]
+  set_property -dict [ list \
+   CONFIG.SINGLE_PORT_BRAM {1} \
+ ] $axi_bram_ctrl_8
+
   # Create instance: axi_cdma_0, and set properties
   set axi_cdma_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_cdma:4.1 axi_cdma_0 ]
   set_property -dict [ list \
@@ -284,7 +298,7 @@ proc create_root_design { parentCell } {
   # Create instance: axi_smc, and set properties
   set axi_smc [ create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 axi_smc ]
   set_property -dict [ list \
-   CONFIG.NUM_MI {8} \
+   CONFIG.NUM_MI {10} \
    CONFIG.NUM_SI {1} \
  ] $axi_smc
 
@@ -391,6 +405,54 @@ proc create_root_design { parentCell } {
    CONFIG.use_bram_block {BRAM_Controller} \
  ] $blk_mem_gen_6
 
+  # Create instance: blk_mem_gen_7, and set properties
+  set blk_mem_gen_7 [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen:8.4 blk_mem_gen_7 ]
+  set_property -dict [ list \
+   CONFIG.Byte_Size {8} \
+   CONFIG.EN_SAFETY_CKT {true} \
+   CONFIG.Enable_32bit_Address {true} \
+   CONFIG.Enable_B {Use_ENB_Pin} \
+   CONFIG.Memory_Type {True_Dual_Port_RAM} \
+   CONFIG.Port_B_Clock {100} \
+   CONFIG.Port_B_Enable_Rate {100} \
+   CONFIG.Port_B_Write_Rate {50} \
+   CONFIG.Read_Width_A {32} \
+   CONFIG.Read_Width_B {32} \
+   CONFIG.Register_PortA_Output_of_Memory_Core {false} \
+   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
+   CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
+   CONFIG.Use_Byte_Write_Enable {true} \
+   CONFIG.Use_RSTA_Pin {true} \
+   CONFIG.Use_RSTB_Pin {true} \
+   CONFIG.Write_Width_A {32} \
+   CONFIG.Write_Width_B {32} \
+   CONFIG.use_bram_block {BRAM_Controller} \
+ ] $blk_mem_gen_7
+
+  # Create instance: blk_mem_gen_8, and set properties
+  set blk_mem_gen_8 [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen:8.4 blk_mem_gen_8 ]
+  set_property -dict [ list \
+   CONFIG.Byte_Size {8} \
+   CONFIG.EN_SAFETY_CKT {true} \
+   CONFIG.Enable_32bit_Address {true} \
+   CONFIG.Enable_B {Use_ENB_Pin} \
+   CONFIG.Memory_Type {True_Dual_Port_RAM} \
+   CONFIG.Port_B_Clock {100} \
+   CONFIG.Port_B_Enable_Rate {100} \
+   CONFIG.Port_B_Write_Rate {50} \
+   CONFIG.Read_Width_A {32} \
+   CONFIG.Read_Width_B {32} \
+   CONFIG.Register_PortA_Output_of_Memory_Core {false} \
+   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
+   CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
+   CONFIG.Use_Byte_Write_Enable {true} \
+   CONFIG.Use_RSTA_Pin {true} \
+   CONFIG.Use_RSTB_Pin {true} \
+   CONFIG.Write_Width_A {32} \
+   CONFIG.Write_Width_B {32} \
+   CONFIG.use_bram_block {BRAM_Controller} \
+ ] $blk_mem_gen_8
+
   # Create instance: config_regfile_0, and set properties
   set block_name config_regfile
   set block_cell_name config_regfile_0
@@ -453,6 +515,34 @@ proc create_root_design { parentCell } {
     set_property -dict [ list \
    CONFIG.OUTPUT_MEM_ADDR_MODE {2} \
  ] $psum_bramctrl_bus_mux_1
+
+  # Create instance: psum_bramctrl_bus_mux_2, and set properties
+  set block_name psum_bramctrl_bus_mux
+  set block_cell_name psum_bramctrl_bus_mux_2
+  if { [catch {set psum_bramctrl_bus_mux_2 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_msg_id "BD_TCL-105" "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $psum_bramctrl_bus_mux_2 eq "" } {
+     catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [ list \
+   CONFIG.OUTPUT_MEM_ADDR_MODE {2} \
+ ] $psum_bramctrl_bus_mux_2
+
+  # Create instance: psum_bramctrl_bus_mux_3, and set properties
+  set block_name psum_bramctrl_bus_mux
+  set block_cell_name psum_bramctrl_bus_mux_3
+  if { [catch {set psum_bramctrl_bus_mux_3 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_msg_id "BD_TCL-105" "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $psum_bramctrl_bus_mux_3 eq "" } {
+     catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [ list \
+   CONFIG.OUTPUT_MEM_ADDR_MODE {2} \
+ ] $psum_bramctrl_bus_mux_3
 
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
@@ -1897,6 +1987,8 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net axi_smc_M05_AXI [get_bd_intf_pins axi_bram_ctrl_4/S_AXI] [get_bd_intf_pins axi_smc/M05_AXI]
   connect_bd_intf_net -intf_net axi_smc_M06_AXI [get_bd_intf_pins axi_bram_ctrl_5/S_AXI] [get_bd_intf_pins axi_smc/M06_AXI]
   connect_bd_intf_net -intf_net axi_smc_M07_AXI [get_bd_intf_pins axi_bram_ctrl_6/S_AXI] [get_bd_intf_pins axi_smc/M07_AXI]
+  connect_bd_intf_net -intf_net axi_smc_M08_AXI [get_bd_intf_pins axi_bram_ctrl_7/S_AXI] [get_bd_intf_pins axi_smc/M08_AXI]
+  connect_bd_intf_net -intf_net axi_smc_M09_AXI [get_bd_intf_pins axi_bram_ctrl_8/S_AXI] [get_bd_intf_pins axi_smc/M09_AXI]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M00_AXI [get_bd_intf_pins axi_cdma_0/S_AXI_LITE] [get_bd_intf_pins ps8_0_axi_periph/M00_AXI]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M01_AXI [get_bd_intf_pins config_regfile_0/S_AXI] [get_bd_intf_pins ps8_0_axi_periph/M01_AXI]
   connect_bd_intf_net -intf_net zynq_ultra_ps_e_0_M_AXI_HPM0_FPD [get_bd_intf_pins ps8_0_axi_periph/S00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM0_FPD]
@@ -1915,6 +2007,18 @@ proc create_root_design { parentCell } {
   connect_bd_net -net axi_bram_ctrl_6_bram_rst_a [get_bd_pins axi_bram_ctrl_6/bram_rst_a] [get_bd_pins psum_bramctrl_bus_mux_1/bram_rst_a]
   connect_bd_net -net axi_bram_ctrl_6_bram_we_a [get_bd_pins axi_bram_ctrl_6/bram_we_a] [get_bd_pins psum_bramctrl_bus_mux_1/bram_we_a]
   connect_bd_net -net axi_bram_ctrl_6_bram_wrdata_a [get_bd_pins axi_bram_ctrl_6/bram_wrdata_a] [get_bd_pins psum_bramctrl_bus_mux_1/bram_wrdata_a]
+  connect_bd_net -net axi_bram_ctrl_7_bram_addr_a [get_bd_pins axi_bram_ctrl_7/bram_addr_a] [get_bd_pins psum_bramctrl_bus_mux_2/bram_addr_a]
+  connect_bd_net -net axi_bram_ctrl_7_bram_clk_a [get_bd_pins axi_bram_ctrl_7/bram_clk_a] [get_bd_pins psum_bramctrl_bus_mux_2/bram_clk_a]
+  connect_bd_net -net axi_bram_ctrl_7_bram_en_a [get_bd_pins axi_bram_ctrl_7/bram_en_a] [get_bd_pins psum_bramctrl_bus_mux_2/bram_en_a]
+  connect_bd_net -net axi_bram_ctrl_7_bram_rst_a [get_bd_pins axi_bram_ctrl_7/bram_rst_a] [get_bd_pins psum_bramctrl_bus_mux_2/bram_rst_a]
+  connect_bd_net -net axi_bram_ctrl_7_bram_we_a [get_bd_pins axi_bram_ctrl_7/bram_we_a] [get_bd_pins psum_bramctrl_bus_mux_2/bram_we_a]
+  connect_bd_net -net axi_bram_ctrl_7_bram_wrdata_a [get_bd_pins axi_bram_ctrl_7/bram_wrdata_a] [get_bd_pins psum_bramctrl_bus_mux_2/bram_wrdata_a]
+  connect_bd_net -net axi_bram_ctrl_8_bram_addr_a [get_bd_pins axi_bram_ctrl_8/bram_addr_a] [get_bd_pins psum_bramctrl_bus_mux_3/bram_addr_a]
+  connect_bd_net -net axi_bram_ctrl_8_bram_clk_a [get_bd_pins axi_bram_ctrl_8/bram_clk_a] [get_bd_pins psum_bramctrl_bus_mux_3/bram_clk_a]
+  connect_bd_net -net axi_bram_ctrl_8_bram_en_a [get_bd_pins axi_bram_ctrl_8/bram_en_a] [get_bd_pins psum_bramctrl_bus_mux_3/bram_en_a]
+  connect_bd_net -net axi_bram_ctrl_8_bram_rst_a [get_bd_pins axi_bram_ctrl_8/bram_rst_a] [get_bd_pins psum_bramctrl_bus_mux_3/bram_rst_a]
+  connect_bd_net -net axi_bram_ctrl_8_bram_we_a [get_bd_pins axi_bram_ctrl_8/bram_we_a] [get_bd_pins psum_bramctrl_bus_mux_3/bram_we_a]
+  connect_bd_net -net axi_bram_ctrl_8_bram_wrdata_a [get_bd_pins axi_bram_ctrl_8/bram_wrdata_a] [get_bd_pins psum_bramctrl_bus_mux_3/bram_wrdata_a]
   connect_bd_net -net axi_cdma_0_cdma_introut [get_bd_pins axi_cdma_0/cdma_introut] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins dnn_accelerator_core_0/mem_odat_0]
   connect_bd_net -net blk_mem_gen_1_doutb [get_bd_pins blk_mem_gen_1/doutb] [get_bd_pins dnn_accelerator_core_0/mem_odat_1]
@@ -1923,9 +2027,13 @@ proc create_root_design { parentCell } {
   connect_bd_net -net blk_mem_gen_4_doutb [get_bd_pins blk_mem_gen_4/doutb] [get_bd_pins dnn_accelerator_core_0/mem_odat_4]
   connect_bd_net -net blk_mem_gen_5_douta [get_bd_pins blk_mem_gen_5/douta] [get_bd_pins psum_bramctrl_bus_mux_0/douta]
   connect_bd_net -net blk_mem_gen_5_douta1 [get_bd_pins blk_mem_gen_6/douta] [get_bd_pins psum_bramctrl_bus_mux_1/douta]
+  connect_bd_net -net blk_mem_gen_5_douta2 [get_bd_pins blk_mem_gen_7/douta] [get_bd_pins psum_bramctrl_bus_mux_2/douta]
+  connect_bd_net -net blk_mem_gen_5_douta3 [get_bd_pins blk_mem_gen_8/douta] [get_bd_pins psum_bramctrl_bus_mux_3/douta]
   connect_bd_net -net blk_mem_gen_5_doutb [get_bd_pins blk_mem_gen_5/doutb] [get_bd_pins dnn_accelerator_core_0/mem_odat_6]
   connect_bd_net -net blk_mem_gen_6_doutb [get_bd_pins blk_mem_gen_6/doutb] [get_bd_pins dnn_accelerator_core_0/mem_odat_8]
-  connect_bd_net -net config_regfile_0_reg0 [get_bd_pins config_regfile_0/reg0] [get_bd_pins dnn_accelerator_core_0/i_conf_ctrl] [get_bd_pins psum_bramctrl_bus_mux_0/i_conf_ctrl] [get_bd_pins psum_bramctrl_bus_mux_1/i_conf_ctrl]
+  connect_bd_net -net blk_mem_gen_7_doutb [get_bd_pins blk_mem_gen_7/doutb] [get_bd_pins dnn_accelerator_core_0/mem_odat_10]
+  connect_bd_net -net blk_mem_gen_8_doutb [get_bd_pins blk_mem_gen_8/doutb] [get_bd_pins dnn_accelerator_core_0/mem_odat_12]
+  connect_bd_net -net config_regfile_0_reg0 [get_bd_pins config_regfile_0/reg0] [get_bd_pins dnn_accelerator_core_0/i_conf_ctrl] [get_bd_pins psum_bramctrl_bus_mux_0/i_conf_ctrl] [get_bd_pins psum_bramctrl_bus_mux_1/i_conf_ctrl] [get_bd_pins psum_bramctrl_bus_mux_2/i_conf_ctrl] [get_bd_pins psum_bramctrl_bus_mux_3/i_conf_ctrl]
   connect_bd_net -net config_regfile_0_reg1 [get_bd_pins config_regfile_0/reg1] [get_bd_pins dnn_accelerator_core_0/i_conf_outputsize]
   connect_bd_net -net config_regfile_0_reg2 [get_bd_pins config_regfile_0/reg2] [get_bd_pins dnn_accelerator_core_0/i_conf_kernelsize]
   connect_bd_net -net config_regfile_0_reg3 [get_bd_pins config_regfile_0/reg3] [get_bd_pins dnn_accelerator_core_0/i_conf_weightinterval]
@@ -1954,6 +2062,10 @@ proc create_root_design { parentCell } {
   connect_bd_net -net dnn_accelerator_core_0_mem_addr_6 [get_bd_pins blk_mem_gen_5/addrb] [get_bd_pins dnn_accelerator_core_0/mem_addr_6]
   connect_bd_net -net dnn_accelerator_core_0_mem_addr_7 [get_bd_pins dnn_accelerator_core_0/mem_addr_7] [get_bd_pins psum_bramctrl_bus_mux_1/mem_addr]
   connect_bd_net -net dnn_accelerator_core_0_mem_addr_8 [get_bd_pins blk_mem_gen_6/addrb] [get_bd_pins dnn_accelerator_core_0/mem_addr_8]
+  connect_bd_net -net dnn_accelerator_core_0_mem_addr_9 [get_bd_pins dnn_accelerator_core_0/mem_addr_9] [get_bd_pins psum_bramctrl_bus_mux_2/mem_addr]
+  connect_bd_net -net dnn_accelerator_core_0_mem_addr_10 [get_bd_pins blk_mem_gen_7/addrb] [get_bd_pins dnn_accelerator_core_0/mem_addr_10]
+  connect_bd_net -net dnn_accelerator_core_0_mem_addr_11 [get_bd_pins dnn_accelerator_core_0/mem_addr_11] [get_bd_pins psum_bramctrl_bus_mux_3/mem_addr]
+  connect_bd_net -net dnn_accelerator_core_0_mem_addr_12 [get_bd_pins blk_mem_gen_8/addrb] [get_bd_pins dnn_accelerator_core_0/mem_addr_12]
   connect_bd_net -net dnn_accelerator_core_0_mem_enb_0 [get_bd_pins blk_mem_gen_0/enb] [get_bd_pins dnn_accelerator_core_0/mem_enb_0]
   connect_bd_net -net dnn_accelerator_core_0_mem_enb_1 [get_bd_pins blk_mem_gen_1/enb] [get_bd_pins dnn_accelerator_core_0/mem_enb_1]
   connect_bd_net -net dnn_accelerator_core_0_mem_enb_2 [get_bd_pins blk_mem_gen_2/enb] [get_bd_pins dnn_accelerator_core_0/mem_enb_2]
@@ -1963,6 +2075,10 @@ proc create_root_design { parentCell } {
   connect_bd_net -net dnn_accelerator_core_0_mem_enb_6 [get_bd_pins blk_mem_gen_5/enb] [get_bd_pins dnn_accelerator_core_0/mem_enb_6]
   connect_bd_net -net dnn_accelerator_core_0_mem_enb_7 [get_bd_pins dnn_accelerator_core_0/mem_enb_7] [get_bd_pins psum_bramctrl_bus_mux_1/mem_enb]
   connect_bd_net -net dnn_accelerator_core_0_mem_enb_8 [get_bd_pins blk_mem_gen_6/enb] [get_bd_pins dnn_accelerator_core_0/mem_enb_8]
+  connect_bd_net -net dnn_accelerator_core_0_mem_enb_9 [get_bd_pins dnn_accelerator_core_0/mem_enb_9] [get_bd_pins psum_bramctrl_bus_mux_2/mem_enb]
+  connect_bd_net -net dnn_accelerator_core_0_mem_enb_10 [get_bd_pins blk_mem_gen_7/enb] [get_bd_pins dnn_accelerator_core_0/mem_enb_10]
+  connect_bd_net -net dnn_accelerator_core_0_mem_enb_11 [get_bd_pins dnn_accelerator_core_0/mem_enb_11] [get_bd_pins psum_bramctrl_bus_mux_3/mem_enb]
+  connect_bd_net -net dnn_accelerator_core_0_mem_enb_12 [get_bd_pins blk_mem_gen_8/enb] [get_bd_pins dnn_accelerator_core_0/mem_enb_12]
   connect_bd_net -net dnn_accelerator_core_0_mem_idat_0 [get_bd_pins blk_mem_gen_0/dinb] [get_bd_pins dnn_accelerator_core_0/mem_idat_0]
   connect_bd_net -net dnn_accelerator_core_0_mem_idat_1 [get_bd_pins blk_mem_gen_1/dinb] [get_bd_pins dnn_accelerator_core_0/mem_idat_1]
   connect_bd_net -net dnn_accelerator_core_0_mem_idat_2 [get_bd_pins blk_mem_gen_2/dinb] [get_bd_pins dnn_accelerator_core_0/mem_idat_2]
@@ -1972,6 +2088,10 @@ proc create_root_design { parentCell } {
   connect_bd_net -net dnn_accelerator_core_0_mem_idat_6 [get_bd_pins blk_mem_gen_5/dinb] [get_bd_pins dnn_accelerator_core_0/mem_idat_6]
   connect_bd_net -net dnn_accelerator_core_0_mem_idat_7 [get_bd_pins dnn_accelerator_core_0/mem_idat_7] [get_bd_pins psum_bramctrl_bus_mux_1/mem_idat]
   connect_bd_net -net dnn_accelerator_core_0_mem_idat_8 [get_bd_pins blk_mem_gen_6/dinb] [get_bd_pins dnn_accelerator_core_0/mem_idat_8]
+  connect_bd_net -net dnn_accelerator_core_0_mem_idat_9 [get_bd_pins dnn_accelerator_core_0/mem_idat_9] [get_bd_pins psum_bramctrl_bus_mux_2/mem_idat]
+  connect_bd_net -net dnn_accelerator_core_0_mem_idat_10 [get_bd_pins blk_mem_gen_7/dinb] [get_bd_pins dnn_accelerator_core_0/mem_idat_10]
+  connect_bd_net -net dnn_accelerator_core_0_mem_idat_11 [get_bd_pins dnn_accelerator_core_0/mem_idat_11] [get_bd_pins psum_bramctrl_bus_mux_3/mem_idat]
+  connect_bd_net -net dnn_accelerator_core_0_mem_idat_12 [get_bd_pins blk_mem_gen_8/dinb] [get_bd_pins dnn_accelerator_core_0/mem_idat_12]
   connect_bd_net -net dnn_accelerator_core_0_mem_rst_0 [get_bd_pins blk_mem_gen_0/rstb] [get_bd_pins dnn_accelerator_core_0/mem_rst_0]
   connect_bd_net -net dnn_accelerator_core_0_mem_rst_1 [get_bd_pins blk_mem_gen_1/rstb] [get_bd_pins dnn_accelerator_core_0/mem_rst_1]
   connect_bd_net -net dnn_accelerator_core_0_mem_rst_2 [get_bd_pins blk_mem_gen_2/rstb] [get_bd_pins dnn_accelerator_core_0/mem_rst_2]
@@ -1981,6 +2101,10 @@ proc create_root_design { parentCell } {
   connect_bd_net -net dnn_accelerator_core_0_mem_rst_6 [get_bd_pins blk_mem_gen_5/rstb] [get_bd_pins dnn_accelerator_core_0/mem_rst_6]
   connect_bd_net -net dnn_accelerator_core_0_mem_rst_7 [get_bd_pins dnn_accelerator_core_0/mem_rst_7] [get_bd_pins psum_bramctrl_bus_mux_1/mem_rst]
   connect_bd_net -net dnn_accelerator_core_0_mem_rst_8 [get_bd_pins blk_mem_gen_6/rstb] [get_bd_pins dnn_accelerator_core_0/mem_rst_8]
+  connect_bd_net -net dnn_accelerator_core_0_mem_rst_9 [get_bd_pins dnn_accelerator_core_0/mem_rst_9] [get_bd_pins psum_bramctrl_bus_mux_2/mem_rst]
+  connect_bd_net -net dnn_accelerator_core_0_mem_rst_10 [get_bd_pins blk_mem_gen_7/rstb] [get_bd_pins dnn_accelerator_core_0/mem_rst_10]
+  connect_bd_net -net dnn_accelerator_core_0_mem_rst_11 [get_bd_pins dnn_accelerator_core_0/mem_rst_11] [get_bd_pins psum_bramctrl_bus_mux_3/mem_rst]
+  connect_bd_net -net dnn_accelerator_core_0_mem_rst_12 [get_bd_pins blk_mem_gen_8/rstb] [get_bd_pins dnn_accelerator_core_0/mem_rst_12]
   connect_bd_net -net dnn_accelerator_core_0_mem_wren_0 [get_bd_pins blk_mem_gen_0/web] [get_bd_pins dnn_accelerator_core_0/mem_wren_0]
   connect_bd_net -net dnn_accelerator_core_0_mem_wren_1 [get_bd_pins blk_mem_gen_1/web] [get_bd_pins dnn_accelerator_core_0/mem_wren_1]
   connect_bd_net -net dnn_accelerator_core_0_mem_wren_2 [get_bd_pins blk_mem_gen_2/web] [get_bd_pins dnn_accelerator_core_0/mem_wren_2]
@@ -1990,26 +2114,44 @@ proc create_root_design { parentCell } {
   connect_bd_net -net dnn_accelerator_core_0_mem_wren_6 [get_bd_pins blk_mem_gen_5/web] [get_bd_pins dnn_accelerator_core_0/mem_wren_6]
   connect_bd_net -net dnn_accelerator_core_0_mem_wren_7 [get_bd_pins dnn_accelerator_core_0/mem_wren_7] [get_bd_pins psum_bramctrl_bus_mux_1/mem_wren]
   connect_bd_net -net dnn_accelerator_core_0_mem_wren_8 [get_bd_pins blk_mem_gen_6/web] [get_bd_pins dnn_accelerator_core_0/mem_wren_8]
+  connect_bd_net -net dnn_accelerator_core_0_mem_wren_9 [get_bd_pins dnn_accelerator_core_0/mem_wren_9] [get_bd_pins psum_bramctrl_bus_mux_2/mem_wren]
+  connect_bd_net -net dnn_accelerator_core_0_mem_wren_10 [get_bd_pins blk_mem_gen_7/web] [get_bd_pins dnn_accelerator_core_0/mem_wren_10]
+  connect_bd_net -net dnn_accelerator_core_0_mem_wren_11 [get_bd_pins dnn_accelerator_core_0/mem_wren_11] [get_bd_pins psum_bramctrl_bus_mux_3/mem_wren]
+  connect_bd_net -net dnn_accelerator_core_0_mem_wren_12 [get_bd_pins blk_mem_gen_8/web] [get_bd_pins dnn_accelerator_core_0/mem_wren_12]
   connect_bd_net -net dnn_accelerator_core_0_o_conf_status [get_bd_pins config_regfile_0/ireg0] [get_bd_pins dnn_accelerator_core_0/o_conf_status]
   connect_bd_net -net proc_sys_reset_0_interconnect_aresetn [get_bd_pins proc_sys_reset_0/interconnect_aresetn] [get_bd_pins ps8_0_axi_periph/ARESETN]
   connect_bd_net -net proc_sys_reset_0_peripheral_reset [get_bd_pins dnn_accelerator_core_0/rst] [get_bd_pins proc_sys_reset_0/peripheral_reset]
   connect_bd_net -net psum_bramctrl_bus_mux_0_addra [get_bd_pins blk_mem_gen_5/addra] [get_bd_pins psum_bramctrl_bus_mux_0/addra]
   connect_bd_net -net psum_bramctrl_bus_mux_0_addra1 [get_bd_pins blk_mem_gen_6/addra] [get_bd_pins psum_bramctrl_bus_mux_1/addra]
+  connect_bd_net -net psum_bramctrl_bus_mux_0_addra2 [get_bd_pins blk_mem_gen_7/addra] [get_bd_pins psum_bramctrl_bus_mux_2/addra]
+  connect_bd_net -net psum_bramctrl_bus_mux_0_addra3 [get_bd_pins blk_mem_gen_8/addra] [get_bd_pins psum_bramctrl_bus_mux_3/addra]
   connect_bd_net -net psum_bramctrl_bus_mux_0_bram_rddata_a [get_bd_pins axi_bram_ctrl_5/bram_rddata_a] [get_bd_pins psum_bramctrl_bus_mux_0/bram_rddata_a]
   connect_bd_net -net psum_bramctrl_bus_mux_0_dina [get_bd_pins blk_mem_gen_5/dina] [get_bd_pins psum_bramctrl_bus_mux_0/dina]
   connect_bd_net -net psum_bramctrl_bus_mux_0_dina1 [get_bd_pins blk_mem_gen_6/dina] [get_bd_pins psum_bramctrl_bus_mux_1/dina]
+  connect_bd_net -net psum_bramctrl_bus_mux_0_dina2 [get_bd_pins blk_mem_gen_7/dina] [get_bd_pins psum_bramctrl_bus_mux_2/dina]
+  connect_bd_net -net psum_bramctrl_bus_mux_0_dina3 [get_bd_pins blk_mem_gen_8/dina] [get_bd_pins psum_bramctrl_bus_mux_3/dina]
   connect_bd_net -net psum_bramctrl_bus_mux_0_ena [get_bd_pins blk_mem_gen_5/ena] [get_bd_pins psum_bramctrl_bus_mux_0/ena]
   connect_bd_net -net psum_bramctrl_bus_mux_0_ena1 [get_bd_pins blk_mem_gen_6/ena] [get_bd_pins psum_bramctrl_bus_mux_1/ena]
+  connect_bd_net -net psum_bramctrl_bus_mux_0_ena2 [get_bd_pins blk_mem_gen_7/ena] [get_bd_pins psum_bramctrl_bus_mux_2/ena]
+  connect_bd_net -net psum_bramctrl_bus_mux_0_ena3 [get_bd_pins blk_mem_gen_8/ena] [get_bd_pins psum_bramctrl_bus_mux_3/ena]
   connect_bd_net -net psum_bramctrl_bus_mux_0_mem_odat [get_bd_pins dnn_accelerator_core_0/mem_odat_5] [get_bd_pins psum_bramctrl_bus_mux_0/mem_odat]
   connect_bd_net -net psum_bramctrl_bus_mux_0_rsta [get_bd_pins blk_mem_gen_5/rsta] [get_bd_pins psum_bramctrl_bus_mux_0/rsta]
   connect_bd_net -net psum_bramctrl_bus_mux_0_rsta1 [get_bd_pins blk_mem_gen_6/rsta] [get_bd_pins psum_bramctrl_bus_mux_1/rsta]
+  connect_bd_net -net psum_bramctrl_bus_mux_0_rsta2 [get_bd_pins blk_mem_gen_7/rsta] [get_bd_pins psum_bramctrl_bus_mux_2/rsta]
+  connect_bd_net -net psum_bramctrl_bus_mux_0_rsta3 [get_bd_pins blk_mem_gen_8/rsta] [get_bd_pins psum_bramctrl_bus_mux_3/rsta]
   connect_bd_net -net psum_bramctrl_bus_mux_0_wea [get_bd_pins blk_mem_gen_5/wea] [get_bd_pins psum_bramctrl_bus_mux_0/wea]
   connect_bd_net -net psum_bramctrl_bus_mux_0_wea1 [get_bd_pins blk_mem_gen_6/wea] [get_bd_pins psum_bramctrl_bus_mux_1/wea]
+  connect_bd_net -net psum_bramctrl_bus_mux_0_wea2 [get_bd_pins blk_mem_gen_7/wea] [get_bd_pins psum_bramctrl_bus_mux_2/wea]
+  connect_bd_net -net psum_bramctrl_bus_mux_0_wea3 [get_bd_pins blk_mem_gen_8/wea] [get_bd_pins psum_bramctrl_bus_mux_3/wea]
   connect_bd_net -net psum_bramctrl_bus_mux_1_bram_rddata_a [get_bd_pins axi_bram_ctrl_6/bram_rddata_a] [get_bd_pins psum_bramctrl_bus_mux_1/bram_rddata_a]
   connect_bd_net -net psum_bramctrl_bus_mux_1_mem_odat [get_bd_pins dnn_accelerator_core_0/mem_odat_7] [get_bd_pins psum_bramctrl_bus_mux_1/mem_odat]
-  connect_bd_net -net rst_ps8_0_99M_peripheral_aresetn [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_1/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_2/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_3/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_4/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_5/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_6/s_axi_aresetn] [get_bd_pins axi_cdma_0/s_axi_lite_aresetn] [get_bd_pins axi_smc/aresetn] [get_bd_pins config_regfile_0/S_AXI_ARESETN] [get_bd_pins proc_sys_reset_0/peripheral_aresetn] [get_bd_pins ps8_0_axi_periph/M00_ARESETN] [get_bd_pins ps8_0_axi_periph/M01_ARESETN] [get_bd_pins ps8_0_axi_periph/S00_ARESETN] [get_bd_pins ps8_0_axi_periph/S01_ARESETN]
+  connect_bd_net -net psum_bramctrl_bus_mux_2_bram_rddata_a [get_bd_pins axi_bram_ctrl_7/bram_rddata_a] [get_bd_pins psum_bramctrl_bus_mux_2/bram_rddata_a]
+  connect_bd_net -net psum_bramctrl_bus_mux_2_mem_odat [get_bd_pins dnn_accelerator_core_0/mem_odat_9] [get_bd_pins psum_bramctrl_bus_mux_2/mem_odat]
+  connect_bd_net -net psum_bramctrl_bus_mux_2_mem_odat1 [get_bd_pins dnn_accelerator_core_0/mem_odat_11] [get_bd_pins psum_bramctrl_bus_mux_3/mem_odat]
+  connect_bd_net -net psum_bramctrl_bus_mux_3_bram_rddata_a [get_bd_pins axi_bram_ctrl_8/bram_rddata_a] [get_bd_pins psum_bramctrl_bus_mux_3/bram_rddata_a]
+  connect_bd_net -net rst_ps8_0_99M_peripheral_aresetn [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_1/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_2/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_3/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_4/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_5/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_6/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_7/s_axi_aresetn] [get_bd_pins axi_bram_ctrl_8/s_axi_aresetn] [get_bd_pins axi_cdma_0/s_axi_lite_aresetn] [get_bd_pins axi_smc/aresetn] [get_bd_pins config_regfile_0/S_AXI_ARESETN] [get_bd_pins proc_sys_reset_0/peripheral_aresetn] [get_bd_pins ps8_0_axi_periph/M00_ARESETN] [get_bd_pins ps8_0_axi_periph/M01_ARESETN] [get_bd_pins ps8_0_axi_periph/S00_ARESETN] [get_bd_pins ps8_0_axi_periph/S01_ARESETN]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins xlconcat_0/dout] [get_bd_pins zynq_ultra_ps_e_0/pl_ps_irq0]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins axi_bram_ctrl_1/s_axi_aclk] [get_bd_pins axi_bram_ctrl_2/s_axi_aclk] [get_bd_pins axi_bram_ctrl_3/s_axi_aclk] [get_bd_pins axi_bram_ctrl_4/s_axi_aclk] [get_bd_pins axi_bram_ctrl_5/s_axi_aclk] [get_bd_pins axi_bram_ctrl_6/s_axi_aclk] [get_bd_pins axi_cdma_0/m_axi_aclk] [get_bd_pins axi_cdma_0/s_axi_lite_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins blk_mem_gen_1/clkb] [get_bd_pins blk_mem_gen_2/clkb] [get_bd_pins blk_mem_gen_3/clkb] [get_bd_pins blk_mem_gen_4/clkb] [get_bd_pins blk_mem_gen_5/clka] [get_bd_pins blk_mem_gen_5/clkb] [get_bd_pins blk_mem_gen_6/clka] [get_bd_pins blk_mem_gen_6/clkb] [get_bd_pins config_regfile_0/S_AXI_ACLK] [get_bd_pins dnn_accelerator_core_0/clk] [get_bd_pins proc_sys_reset_0/slowest_sync_clk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph/M01_ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins ps8_0_axi_periph/S01_ACLK] [get_bd_pins psum_bramctrl_bus_mux_0/clk] [get_bd_pins psum_bramctrl_bus_mux_1/clk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm1_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins zynq_ultra_ps_e_0/saxihp0_fpd_aclk]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins axi_bram_ctrl_1/s_axi_aclk] [get_bd_pins axi_bram_ctrl_2/s_axi_aclk] [get_bd_pins axi_bram_ctrl_3/s_axi_aclk] [get_bd_pins axi_bram_ctrl_4/s_axi_aclk] [get_bd_pins axi_bram_ctrl_5/s_axi_aclk] [get_bd_pins axi_bram_ctrl_6/s_axi_aclk] [get_bd_pins axi_bram_ctrl_7/s_axi_aclk] [get_bd_pins axi_bram_ctrl_8/s_axi_aclk] [get_bd_pins axi_cdma_0/m_axi_aclk] [get_bd_pins axi_cdma_0/s_axi_lite_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins blk_mem_gen_1/clkb] [get_bd_pins blk_mem_gen_2/clkb] [get_bd_pins blk_mem_gen_3/clkb] [get_bd_pins blk_mem_gen_4/clkb] [get_bd_pins blk_mem_gen_5/clka] [get_bd_pins blk_mem_gen_5/clkb] [get_bd_pins blk_mem_gen_6/clka] [get_bd_pins blk_mem_gen_6/clkb] [get_bd_pins blk_mem_gen_7/clka] [get_bd_pins blk_mem_gen_7/clkb] [get_bd_pins blk_mem_gen_8/clka] [get_bd_pins blk_mem_gen_8/clkb] [get_bd_pins config_regfile_0/S_AXI_ACLK] [get_bd_pins dnn_accelerator_core_0/clk] [get_bd_pins proc_sys_reset_0/slowest_sync_clk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph/M01_ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins ps8_0_axi_periph/S01_ACLK] [get_bd_pins psum_bramctrl_bus_mux_0/clk] [get_bd_pins psum_bramctrl_bus_mux_1/clk] [get_bd_pins psum_bramctrl_bus_mux_2/clk] [get_bd_pins psum_bramctrl_bus_mux_3/clk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm1_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins zynq_ultra_ps_e_0/saxihp0_fpd_aclk]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins proc_sys_reset_0/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 
   # Create address segments
@@ -2020,6 +2162,8 @@ proc create_root_design { parentCell } {
   create_bd_addr_seg -range 0x00001000 -offset 0x90003000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs axi_bram_ctrl_4/S_AXI/Mem0] SEG_axi_bram_ctrl_4_Mem0
   create_bd_addr_seg -range 0x00020000 -offset 0xA0000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs axi_bram_ctrl_5/S_AXI/Mem0] SEG_axi_bram_ctrl_5_Mem0
   create_bd_addr_seg -range 0x00020000 -offset 0xB0000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs axi_bram_ctrl_6/S_AXI/Mem0] SEG_axi_bram_ctrl_6_Mem0
+  create_bd_addr_seg -range 0x00020000 -offset 0xC0000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs axi_bram_ctrl_7/S_AXI/Mem0] SEG_axi_bram_ctrl_7_Mem0
+  create_bd_addr_seg -range 0x00020000 -offset 0xD0000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs axi_bram_ctrl_8/S_AXI/Mem0] SEG_axi_bram_ctrl_8_Mem0
   create_bd_addr_seg -range 0x80000000 -offset 0x00000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_LOW] SEG_zynq_ultra_ps_e_0_HP0_DDR_LOW
   create_bd_addr_seg -range 0x01000000 -offset 0xFF000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_LPS_OCM] SEG_zynq_ultra_ps_e_0_HP0_LPS_OCM
   create_bd_addr_seg -range 0x00001000 -offset 0xA0000000 [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axi_cdma_0/S_AXI_LITE/Reg] SEG_axi_cdma_0_Reg

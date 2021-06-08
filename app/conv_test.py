@@ -10,7 +10,7 @@ import torch
 
 import time
 
-overlay_name = "zynqmpsoc_conv_dbg_20210526_0130"
+overlay_name = "zynqmpsoc_conv_dbg_20210604_0122"
 
 print("=== Config hardware ===")
 print(overlay_name)
@@ -28,6 +28,8 @@ CDMA_BRAM_WEIGHT2_ADDRESS = 0x90002000
 CDMA_BRAM_WEIGHT3_ADDRESS = 0x90003000
 CDMA_BRAM_OUTPUT0_ADDRESS = 0xA0000000
 CDMA_BRAM_OUTPUT1_ADDRESS = 0xB0000000
+CDMA_BRAM_OUTPUT2_ADDRESS = 0xC0000000
+CDMA_BRAM_OUTPUT3_ADDRESS = 0xD0000000
 
 MMIO_CONFIG_REG_BASE_ADDRESS = 0x00A0001000
 MMIO_CONFIG_REG_ADDRESS_RANGE = 0x1000
@@ -113,7 +115,7 @@ def tconv2d():
     interpreter.allocate_tensors()
     
     weight_l1 = interpreter.get_tensor(8)
-    weight_l1_0_3 = weight_l1[0:3]
+    weight_l1_0_3 = weight_l1[0:16]
     
     t_weight_l1_0_3 = torch.from_numpy(weight_l1_0_3)
     t_weight_l1_0_3 = np.transpose(t_weight_l1_0_3, (0, 3, 1, 2))
@@ -137,7 +139,7 @@ def tconv2d():
     
     time3 = time.time()
     
-    print(t_output)
+    print(t_output.shape)
     
     print("==============================================")
     
@@ -201,19 +203,19 @@ def main():
     start_time1 = time.time()
     
     weight_l1 = interpreter.get_tensor(8)
-    weight_l1_0 = np.concatenate((weight_l1[0], weight_l1[4], weight_l1[8], weight_l1[12], weight_l1[16], weight_l1[20], weight_l1[24], weight_l1[28]))
+    weight_l1_0 = np.concatenate((weight_l1[0], weight_l1[4], weight_l1[0], weight_l1[4], weight_l1[16], weight_l1[20], weight_l1[24], weight_l1[28]))
     weight_l1_0_buffer = allocate(shape=(24,3,3), dtype=np.uint8)
     weight_l1_0_buffer[:] = weight_l1_0
     
-    weight_l1_1 = np.concatenate((weight_l1[1], weight_l1[5], weight_l1[9], weight_l1[13], weight_l1[17], weight_l1[21], weight_l1[25], weight_l1[29]))
+    weight_l1_1 = np.concatenate((weight_l1[1], weight_l1[5], weight_l1[1], weight_l1[5], weight_l1[17], weight_l1[21], weight_l1[25], weight_l1[29]))
     weight_l1_1_buffer = allocate(shape=(24,3,3), dtype=np.uint8)
     weight_l1_1_buffer[:] = weight_l1_1
     
-    weight_l1_2 = np.concatenate((weight_l1[2], weight_l1[6], weight_l1[10], weight_l1[14], weight_l1[18], weight_l1[22], weight_l1[26], weight_l1[30]))
+    weight_l1_2 = np.concatenate((weight_l1[2], weight_l1[6], weight_l1[2], weight_l1[6], weight_l1[18], weight_l1[22], weight_l1[26], weight_l1[30]))
     weight_l1_2_buffer = allocate(shape=(24,3,3), dtype=np.uint8)
     weight_l1_2_buffer[:] = weight_l1_2
     
-    weight_l1_3 = np.concatenate((weight_l1[3], weight_l1[7], weight_l1[11], weight_l1[15], weight_l1[19], weight_l1[23], weight_l1[27], weight_l1[31]))
+    weight_l1_3 = np.concatenate((weight_l1[3], weight_l1[7], weight_l1[3], weight_l1[7], weight_l1[19], weight_l1[23], weight_l1[27], weight_l1[31]))
     weight_l1_3_buffer = allocate(shape=(24,3,3), dtype=np.uint8)
     weight_l1_3_buffer[:] = weight_l1_3
     
@@ -227,22 +229,32 @@ def main():
     
     end_time1 = time.time()
     
+    readback_buffer = allocate(shape=(54,4), dtype=np.uint8)
+    transfer(cdma, CDMA_BRAM_WEIGHT0_ADDRESS, readback_buffer.physical_address, weight_size)
+    print(readback_buffer)
+
+    
 #     print("Load weight data: %s seconds" % (end_time_load1 - start_time1))
 #     print("Transfer to PL  : %s seconds" % (end_time1 - end_time_load1))
 #     print("Total           : %s seconds" % (end_time_load1 - start_time1))
 #     print()
     
     print("==== Perform PL Conv ====")
+    config = np.array([0, 49283, 9, 147851, 0x00080333, 66528, 49727])
+    regfile = reg.array[0:7]
+    
+    
     reg.write(0, 2) # reset
-    reg.write(0, 0) # clear reset
-    reg.write(1 * 4, 49283) # outputsize
-    reg.write(2 * 4, 9) # kernelsize
-    reg.write(3 * 4, 147851) # weightinterval
-#     reg.write(4 * 4, 2097971) # kernelshape
-    reg.write(4 * 4, 0x00040333) # kernelshape 4
-#     reg.write(4 * 4, 0x00200333) # kernelshape 32
-    reg.write(5 * 4, 66528) # inputshape
-    reg.write(6 * 4, 49727) # inputrstcnt
+    regfile[:] = config
+#     reg.write(0, 0) # clear reset
+#     reg.write(1 * 4, 49283) # outputsize
+#     reg.write(2 * 4, 9) # kernelsize
+#     reg.write(3 * 4, 147851) # weightinterval
+# #     reg.write(4 * 4, 2097971) # kernelshape
+#     reg.write(4 * 4, 0x00080333) # kernelshape 4
+# #     reg.write(4 * 4, 0x00200333) # kernelshape 32
+#     reg.write(5 * 4, 66528) # inputshape
+#     reg.write(6 * 4, 49727) # inputrstcnt
     outputsize = reg.read(1 * 4) # outputsize
     kernelsize = reg.read(2 * 4) # kernelsize
     weightinterval = reg.read(3 * 4) # weightinterval
@@ -314,24 +326,86 @@ def main():
     print("dbg_psumacc_wr_addr             : ", dbg_psumacc_wr_addr)
     print()
     
-    reg.write(0, 6) # allow ps access output memory
+    reg.write(0, 4) # allow ps access output memory
+#     regfile[0] = 4
     
     print("Transfer output to PS")
-    output_buffer = allocate(shape=(222,222,4), dtype=np.uint8)
-    output_size = 222 * 222 * 4
+    output_buffer = allocate(shape=(222*4,222,4), dtype=np.uint8)
+    output_size = 222 * 222 * 8
 #     transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address, output_size)
     transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address, 32768*4)
-    transfer(cdma, CDMA_BRAM_OUTPUT1_ADDRESS, output_buffer.physical_address + 32768*4, output_size - 32768*4)
+    transfer(cdma, CDMA_BRAM_OUTPUT1_ADDRESS, output_buffer.physical_address + 32768*4, 32768*4)
+    transfer(cdma, CDMA_BRAM_OUTPUT2_ADDRESS, output_buffer.physical_address + 2*32768*4, 32768*4)
+    transfer(cdma, CDMA_BRAM_OUTPUT3_ADDRESS, output_buffer.physical_address + 3*32768*4, output_size - 3*32768*4)
     
     end_time2 = time.time()
+
+#     reg.write(4 * 4, 0x00100333) # kernelshape 4
+    reg.write(0, 17) # continue engine
+#     reg.write(0, 1) # continue engine
+#     regfile[0] = 17
+#     regfile[0] = 1
     
+    status = reg.read(7 * 4)
+    print(status)
     
-       
+    while (status == 0):
+        status = reg.read(7 * 4)
+        
+    print(status)
+    
+    end_time3 = time.time()
+    
+    reg.write(0, 4) # allow ps access output memory
+    
+    print("Transfer output to PS")
+    transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address + output_size, 32768*4)
+    transfer(cdma, CDMA_BRAM_OUTPUT1_ADDRESS, output_buffer.physical_address + output_size + 32768*4, 32768*4)
+    transfer(cdma, CDMA_BRAM_OUTPUT2_ADDRESS, output_buffer.physical_address + output_size + 2*32768*4, 32768*4)
+    transfer(cdma, CDMA_BRAM_OUTPUT3_ADDRESS, output_buffer.physical_address + output_size + 3*32768*4, output_size - 3*32768*4)
+    
+    print()
+    print("=== Dbg Status ===")
+    
+    dbg_datareq_knlinex_cnt = reg.read(8 * 4)
+    dbg_datareq_addr_reg = reg.read(9 * 4)
+    dbg_linekcpe_valid_knx_cnt = reg.read(10 * 4)
+    dbg_linekcpe_psum_line_vld_cnt = reg.read(11 * 4)
+    dbg_linekcpe_idata_req_cnt = reg.read(12 * 4)
+    dbg_linekcpe_odata_req_cnt = reg.read(13 * 4)
+    dbg_linekcpe_weight_line_req_cnt = reg.read(14 * 4)
+    dbg_linekcpe_weight_done_cnt = reg.read(15 * 4)
+    dbg_linekcpe_kernel_done_cnt = reg.read(16 * 4)
+    dbg_psumacc_base_addr = reg.read(17 * 4)
+    dbg_psumacc_psum_out_cnt = reg.read(18 * 4)
+    dbg_psumacc_rd_addr = reg.read(19 * 4)
+    dbg_psumacc_wr_addr = reg.read(20 * 4)
+    
+    print("dbg_datareq_knlinex_cnt         : ", dbg_datareq_knlinex_cnt)
+    print("dbg_datareq_addr_reg            : ", dbg_datareq_addr_reg)
+    print()
+    print("dbg_linekcpe_valid_knx_cnt      : ", dbg_linekcpe_valid_knx_cnt)
+    print("dbg_linekcpe_psum_line_vld_cnt  : ", dbg_linekcpe_psum_line_vld_cnt)
+    print("dbg_linekcpe_idata_req_cnt      : ", dbg_linekcpe_idata_req_cnt)
+    print("dbg_linekcpe_odata_req_cnt      : ", dbg_linekcpe_odata_req_cnt)
+    print("dbg_linekcpe_weight_line_req_cnt: ", dbg_linekcpe_weight_line_req_cnt)
+    print("dbg_linekcpe_weight_done_cnt    : ", dbg_linekcpe_weight_done_cnt)
+    print("dbg_linekcpe_kernel_done_cnt    : ", dbg_linekcpe_kernel_done_cnt)
+    print()
+    print("dbg_psumacc_base_addr           : ", dbg_psumacc_base_addr)
+    print("dbg_psumacc_psum_out_cnt        : ", dbg_psumacc_psum_out_cnt)
+    print("dbg_psumacc_rd_addr             : ", dbg_psumacc_rd_addr)
+    print("dbg_psumacc_wr_addr             : ", dbg_psumacc_wr_addr)
+    print()
+    
+    print("================= Result ==========================")
     print("Reshape                      : %s seconds" % (end_time_load1 - start_time1))
     print("Transfer data and weight time: %s seconds" % (end_time1 - end_time_load0 - (end_time_load1 - start_time1)))
     print()
     
-    print("Processing time              : %s seconds" % (end_time_load2 - start_time2))
+    print("Processing time 1            : %s seconds" % (end_time_load2 - start_time2))
+    print("Processing time 2            : %s seconds" % (end_time3 - end_time2))
+    print("Processing time with overflow: %s seconds" % (end_time3 - start_time2))
     print()
     
     print("Transfer output time         : %s seconds" % (end_time2 - end_time_load2))
