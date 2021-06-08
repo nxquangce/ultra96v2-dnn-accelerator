@@ -70,7 +70,7 @@ always @(posedge clk) begin
 end
 
 // Multiplier
-// Pipeline: 3
+// Pipeline: 4
 mult_gen_0 i_mul(
     .CLK(clk),
     .A  (data_reg),

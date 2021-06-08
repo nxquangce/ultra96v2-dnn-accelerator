@@ -231,11 +231,17 @@ initial begin
     i_conf_cnt <= 32'd50176;
     i_conf_kernelsize <= 32'd9;
     i_conf_weightinterval <= WEIGHT_INTERVAL;
-    i_conf_kernelshape <= 32'h0004_0333; // h0020_0333
+    i_conf_kernelshape <= 32'h0008_0333; // h0020_0333
     i_conf_inputshape <= 32'h0001_03e0;
     // i_conf_inputrstcnt <= 32'd49283; // 222 * 222 - 1
     i_conf_inputrstcnt <= 32'd49727; // 224 * 222 - 1
     i_conf_outputsize <= 32'd49283;
+
+    #300000.5
+    i_conf_ctrl <= 32'b10001;
+    
+    // #50
+    // i_conf_ctrl <= 32'b00001;
 end
 
 endmodule

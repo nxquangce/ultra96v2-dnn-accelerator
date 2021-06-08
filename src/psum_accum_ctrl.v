@@ -41,6 +41,7 @@ module psum_accum_ctrl(
     memctrl0_odat,
     memctrl0_ovld,
 
+    i_conf_ctrl,
     i_conf_weightinterval,
     i_conf_outputsize,
     i_conf_kernelshape,
@@ -109,6 +110,7 @@ output                      memctrl0_rden;
 input  [DATA_WIDTH - 1 : 0] memctrl0_odat;
 input                       memctrl0_ovld;
 
+input   [REG_WIDTH - 1 : 0] i_conf_ctrl;
 input   [REG_WIDTH - 1 : 0] i_conf_weightinterval;
 input   [REG_WIDTH - 1 : 0] i_conf_outputsize;
 input   [REG_WIDTH - 1 : 0] i_conf_kernelshape;
@@ -158,6 +160,20 @@ reg  [REG_WIDTH - 1 : 0] psum_out_cnt;
 wire                     psum_out_cnt_max_vld;
 wire                     psum_out_cnt_premax_vld;
 
+reg  [MEM_DELAY     : 0] psum_out_cnt_max_vld_pp;
+
+reg                      con_enb;
+reg                      con_enb_cache;
+reg                      con_enb_vld;
+reg                      con_enb_vld_pp;
+reg                      psum_zero_enb;
+
+// Detect rising edge of continue enable conf
+always @(posedge clk) begin
+    con_enb_vld <= ~con_enb_cache & con_enb;
+    con_enb_vld_pp <= con_enb_vld;
+end
+
 assign psum_out_cnt_max_vld = (psum_out_cnt == i_conf_weightinterval);
 assign psum_out_cnt_premax_vld = (psum_out_cnt == (i_conf_weightinterval - 1'b1));
 
@@ -171,7 +187,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (rst) begin
+    if (rst | con_enb_vld) begin
         base_addr <= 0;
     end
     else if (psum_out_cnt_premax_vld) begin
@@ -180,7 +196,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (rst | psum_knx_end) begin
+    if (rst | psum_knx_end | con_enb_vld_pp) begin
         rd_addr <= base_addr;
     end
     else if (psum_kn0_vld) begin
@@ -250,6 +266,12 @@ always @(posedge clk) begin
         wdat_cache[2] <= 0;
         wdat_cache[3] <= 0;
     end
+    else if (psum_zero_enb) begin
+        wdat_cache[0] <= psum_cache[0][MEM_DELAY - 1];
+        wdat_cache[1] <= psum_cache[1][MEM_DELAY - 1];
+        wdat_cache[2] <= psum_cache[2][MEM_DELAY - 1];
+        wdat_cache[3] <= psum_cache[3][MEM_DELAY - 1];
+    end
     else if (memctrl0_ovld) begin
         wdat_cache[0] <= memctrl0_odat[BIT_WIDTH * 1 - 1 :             0] + psum_cache[0][MEM_DELAY - 1];
         wdat_cache[1] <= memctrl0_odat[BIT_WIDTH * 2 - 1 : BIT_WIDTH * 1] + psum_cache[1][MEM_DELAY - 1];
@@ -280,6 +302,39 @@ reg [REG_WIDTH - 1 : 0] kernel_done_cnt_max_reg;
 wire                    kernel_done_cnt_max_vld;
 wire                    done_vld;
 
+reg [MEM_DELAY - 1 : 0] psum_knx_end_pp;
+wire                    psum_knx_end_pp_vld;
+
+always @(posedge clk) begin
+    con_enb <= i_conf_ctrl[4];
+    con_enb_cache <= con_enb;
+end
+
+always @(posedge clk) begin
+    psum_knx_end_pp[0] <= psum_knx_end;
+    psum_knx_end_pp[1] <= psum_knx_end_pp[0];
+end
+
+assign psum_knx_end_pp_vld = psum_knx_end_pp[MEM_DELAY - 1];
+
+always @(posedge clk) begin
+    psum_out_cnt_max_vld_pp[0] <= psum_out_cnt_max_vld;
+    psum_out_cnt_max_vld_pp[1] <= psum_out_cnt_max_vld_pp[0];
+    psum_out_cnt_max_vld_pp[2] <= psum_out_cnt_max_vld_pp[1];
+end
+
+wire psum_zero_enb_vld;
+assign psum_zero_enb_vld = (psum_out_cnt_max_vld_pp[MEM_DELAY] & con_enb) | con_enb_vld;
+
+always @(posedge clk) begin
+    if (rst | psum_knx_end_pp_vld) begin
+        psum_zero_enb <= 0;
+    end
+    else if (psum_zero_enb_vld) begin
+        psum_zero_enb <= 1'b1;
+    end
+end
+
 // fix timming
 always @(posedge clk) begin
     kernel_done_cnt_max_reg <= i_conf_kernelshape[31 : 16] - 3'd4;
@@ -307,7 +362,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (rst | init) begin
+    if (rst | init | con_enb) begin
         done <= 0;
     end
     else if (done_vld) begin

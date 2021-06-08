@@ -44,6 +44,20 @@ module output_mem_addr_decoder(
     bramctrl_addr_wr_1,
     bramctrl_wren_wr_1,
 
+    bramctrl_addr_rd_2,
+    bramctrl_rden_rd_2,
+    bramctrl_odat_rd_2,
+    bramctrl_oval_rd_2,
+    bramctrl_addr_wr_2,
+    bramctrl_wren_wr_2,
+
+    bramctrl_addr_rd_3,
+    bramctrl_rden_rd_3,
+    bramctrl_odat_rd_3,
+    bramctrl_oval_rd_3,
+    bramctrl_addr_wr_3,
+    bramctrl_wren_wr_3,
+
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,9 +66,9 @@ parameter ADDR_WIDTH        = 32;
 parameter DATA_WIDTH        = 32;
 parameter NUM_BYTE          = 4;
 
-parameter NUM_MEM           = 2;
 parameter MEM_DEPTH         = 32768;
-parameter MEM_ADDR_WIDTH    = 16;
+parameter MEM_ADDR_WIDTH    = 15;
+parameter NUM_MEM_WIDTH     = 2;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
@@ -81,58 +95,148 @@ input                       bramctrl_oval_rd_1;
 output [ADDR_WIDTH - 1 : 0] bramctrl_addr_wr_1;
 output                      bramctrl_wren_wr_1;
 
+output [ADDR_WIDTH - 1 : 0] bramctrl_addr_rd_2;
+output                      bramctrl_rden_rd_2;
+input  [DATA_WIDTH - 1 : 0] bramctrl_odat_rd_2;
+input                       bramctrl_oval_rd_2;
+output [ADDR_WIDTH - 1 : 0] bramctrl_addr_wr_2;
+output                      bramctrl_wren_wr_2;
+
+output [ADDR_WIDTH - 1 : 0] bramctrl_addr_rd_3;
+output                      bramctrl_rden_rd_3;
+input  [DATA_WIDTH - 1 : 0] bramctrl_odat_rd_3;
+input                       bramctrl_oval_rd_3;
+output [ADDR_WIDTH - 1 : 0] bramctrl_addr_wr_3;
+output                      bramctrl_wren_wr_3;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
-reg [DATA_WIDTH - 1 : 0] psumctrl_odat;
-reg                      psumctrl_ovld;
-reg [ADDR_WIDTH - 1 : 0] bramctrl_addr_rd_0;
-reg                      bramctrl_rden_rd_0;
-reg [ADDR_WIDTH - 1 : 0] bramctrl_addr_wr_0;
-reg                      bramctrl_wren_wr_0;
-reg [ADDR_WIDTH - 1 : 0] bramctrl_addr_rd_1;
-reg                      bramctrl_rden_rd_1;
-reg [ADDR_WIDTH - 1 : 0] bramctrl_addr_wr_1;
-reg                      bramctrl_wren_wr_1;
+reg  [DATA_WIDTH - 1 : 0] psumctrl_odat;
+reg                       psumctrl_ovld;
+reg  [ADDR_WIDTH - 1 : 0] bramctrl_addr_rd_0;
+reg                       bramctrl_rden_rd_0;
+reg  [ADDR_WIDTH - 1 : 0] bramctrl_addr_wr_0;
+reg                       bramctrl_wren_wr_0;
+reg  [ADDR_WIDTH - 1 : 0] bramctrl_addr_rd_1;
+reg                       bramctrl_rden_rd_1;
+reg  [ADDR_WIDTH - 1 : 0] bramctrl_addr_wr_1;
+reg                       bramctrl_wren_wr_1;
+reg  [ADDR_WIDTH - 1 : 0] bramctrl_addr_rd_2;
+reg                       bramctrl_rden_rd_2;
+reg  [ADDR_WIDTH - 1 : 0] bramctrl_addr_wr_2;
+reg                       bramctrl_wren_wr_2;
+reg  [ADDR_WIDTH - 1 : 0] bramctrl_addr_rd_3;
+reg                       bramctrl_rden_rd_3;
+reg  [ADDR_WIDTH - 1 : 0] bramctrl_addr_wr_3;
+reg                       bramctrl_wren_wr_3;
 
-reg                      cache_sel;
+
+wire [NUM_MEM_WIDTH - 1 : 0] bramctrl_rd_sel;
+wire [NUM_MEM_WIDTH - 1 : 0] bramctrl_wr_sel;
+wire    [ADDR_WIDTH - 1 : 0] bramctrl_rdaddr;
+wire    [ADDR_WIDTH - 1 : 0] bramctrl_wraddr;
+
+reg  [NUM_MEM_WIDTH - 1 : 0] bramctrl_rd_sel_cache;
+
+assign bramctrl_rd_sel = psumctrl_radd[MEM_ADDR_WIDTH + NUM_MEM_WIDTH - 1 : MEM_ADDR_WIDTH];
+assign bramctrl_rdaddr = {{(ADDR_WIDTH - MEM_ADDR_WIDTH){1'b0}}, psumctrl_radd[MEM_ADDR_WIDTH - 1 : 0]};
+
+assign bramctrl_wr_sel = psumctrl_wadd[MEM_ADDR_WIDTH + NUM_MEM_WIDTH - 1 : MEM_ADDR_WIDTH];
+assign bramctrl_wraddr = {{(ADDR_WIDTH - MEM_ADDR_WIDTH){1'b0}}, psumctrl_wadd[MEM_ADDR_WIDTH - 1 : 0]};
 
 always @(posedge clk) begin
-    cache_sel <= psumctrl_radd[MEM_ADDR_WIDTH - 1];
+    bramctrl_rd_sel_cache <= bramctrl_rd_sel;
 end
 
 always @(*) begin
-    if (psumctrl_radd[MEM_ADDR_WIDTH - 1]) begin
-        bramctrl_addr_rd_0 = 0;
-        bramctrl_rden_rd_0 = 0;
-        bramctrl_addr_rd_1 = {{(ADDR_WIDTH - MEM_ADDR_WIDTH + 1){1'b0}}, psumctrl_radd[MEM_ADDR_WIDTH - 2 : 0]};
-        bramctrl_rden_rd_1 = psumctrl_rden;
-    end
-    else begin
-        bramctrl_addr_rd_0 = {{(ADDR_WIDTH - MEM_ADDR_WIDTH + 1){1'b0}}, psumctrl_radd[MEM_ADDR_WIDTH - 2 : 0]};
-        bramctrl_rden_rd_0 = psumctrl_rden;
-        bramctrl_addr_rd_1 = 0;
-        bramctrl_rden_rd_1 = 0;
-    end
+    bramctrl_addr_rd_0 = 0;
+    bramctrl_rden_rd_0 = 0;
+    bramctrl_addr_rd_1 = 0;
+    bramctrl_rden_rd_1 = 0;
+    bramctrl_addr_rd_2 = 0;
+    bramctrl_rden_rd_2 = 0;
+    bramctrl_addr_rd_3 = 0;
+    bramctrl_rden_rd_3 = 0;
+
+    case (bramctrl_rd_sel)
+        2'b00: begin
+            bramctrl_addr_rd_0 = bramctrl_rdaddr;
+            bramctrl_rden_rd_0 = psumctrl_rden;
+        end
+        2'b01: begin
+            bramctrl_addr_rd_1 = bramctrl_rdaddr;
+            bramctrl_rden_rd_1 = psumctrl_rden;
+        end
+        2'b10: begin
+            bramctrl_addr_rd_2 = bramctrl_rdaddr;
+            bramctrl_rden_rd_2 = psumctrl_rden;
+        end
+        2'b11: begin
+            bramctrl_addr_rd_3 = bramctrl_rdaddr;
+            bramctrl_rden_rd_3 = psumctrl_rden;
+        end
+        default: begin
+            bramctrl_addr_rd_0 = 0;
+            bramctrl_rden_rd_0 = 0;
+            bramctrl_addr_rd_1 = 0;
+            bramctrl_rden_rd_1 = 0;
+            bramctrl_addr_rd_2 = 0;
+            bramctrl_rden_rd_2 = 0;
+            bramctrl_addr_rd_3 = 0;
+            bramctrl_rden_rd_3 = 0;
+        end
+    endcase
+end
+
+always @(posedge clk) begin
+    case (bramctrl_rd_sel_cache)
+        2'b00: psumctrl_odat <= bramctrl_odat_rd_0;
+        2'b01: psumctrl_odat <= bramctrl_odat_rd_1;
+        2'b10: psumctrl_odat <= bramctrl_odat_rd_2;
+        2'b11: psumctrl_odat <= bramctrl_odat_rd_3;
+        default: psumctrl_odat <= 0;
+    endcase
+    psumctrl_ovld <= bramctrl_oval_rd_0 | bramctrl_oval_rd_1 | bramctrl_oval_rd_2 | bramctrl_oval_rd_3;
 end
 
 always @(*) begin
-    psumctrl_odat = (cache_sel) ? bramctrl_odat_rd_1 : bramctrl_odat_rd_0;
-    psumctrl_ovld = bramctrl_oval_rd_0 | bramctrl_oval_rd_1;
-end
+    bramctrl_addr_wr_0 = 0;
+    bramctrl_wren_wr_0 = 0;
+    bramctrl_addr_wr_1 = 0;
+    bramctrl_wren_wr_1 = 0;
+    bramctrl_addr_wr_2 = 0;
+    bramctrl_wren_wr_2 = 0;
+    bramctrl_addr_wr_3 = 0;
+    bramctrl_wren_wr_3 = 0;
 
-always @(*) begin
-    if (psumctrl_wadd[MEM_ADDR_WIDTH - 1]) begin
-        bramctrl_addr_wr_0 = 0;
-        bramctrl_wren_wr_0 = 0;
-        bramctrl_addr_wr_1 = {{(ADDR_WIDTH - MEM_ADDR_WIDTH + 1){1'b0}}, psumctrl_wadd[MEM_ADDR_WIDTH - 2 : 0]};
-        bramctrl_wren_wr_1 = psumctrl_wren;
-    end
-    else begin
-        bramctrl_addr_wr_0 = {{(ADDR_WIDTH - MEM_ADDR_WIDTH + 1){1'b0}}, psumctrl_wadd[MEM_ADDR_WIDTH - 2 : 0]};
-        bramctrl_wren_wr_0 = psumctrl_wren;
-        bramctrl_addr_wr_1 = 0;
-        bramctrl_wren_wr_1 = 0;
-    end
+    case (bramctrl_wr_sel) 
+        2'b00: begin
+            bramctrl_addr_wr_0 = bramctrl_wraddr;
+            bramctrl_wren_wr_0 = psumctrl_wren;
+        end
+        2'b01: begin
+            bramctrl_addr_wr_1 = bramctrl_wraddr;
+            bramctrl_wren_wr_1 = psumctrl_wren;    
+        end
+        2'b10: begin
+            bramctrl_addr_wr_2 = bramctrl_wraddr;
+            bramctrl_wren_wr_2 = psumctrl_wren;    
+        end
+        2'b11: begin
+            bramctrl_addr_wr_3 = bramctrl_wraddr;
+            bramctrl_wren_wr_3 = psumctrl_wren;    
+        end
+        default: begin
+            bramctrl_addr_wr_0 = 0;
+            bramctrl_wren_wr_0 = 0;
+            bramctrl_addr_wr_1 = 0;
+            bramctrl_wren_wr_1 = 0;
+            bramctrl_addr_wr_2 = 0;
+            bramctrl_wren_wr_2 = 0;
+            bramctrl_addr_wr_3 = 0;
+            bramctrl_wren_wr_3 = 0;
+        end
+    endcase
 end
 
 endmodule
