@@ -423,6 +423,9 @@ wire                      pixelconcat_ivld;
 wire                      pixelconcat_ostall;
 wire [ADDR_WIDTH - 1 : 0] datareq_o_addr;
 wire                      datareq_o_rden;
+wire                [3:0] i_cnfx_stride;
+
+assign i_cnfx_stride = i_conf_kernelsize[18:16];
 
 data_req data_req_inst(
     .clk                    (clk),
@@ -432,6 +435,7 @@ data_req data_req_inst(
     .i_stall                (pixelconcat_ostall),
     .o_addr                 (datareq_o_addr),
     .o_rden                 (datareq_o_rden),
+    .i_cnfx_stride          (i_cnfx_stride),
     .i_conf_inputshape      (i_conf_inputshape),
     .i_conf_kernelshape     (i_conf_kernelshape),
     .dbg_datareq_knlinex_cnt(dbg_datareq_knlinex_cnt),
