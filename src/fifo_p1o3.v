@@ -80,22 +80,6 @@ assign wr_enb = ~full  & wr_req;
 assign rd_enb = ~empty & rd_req;
 
 // FIFO Data counter
-// reg [FF_ADDR_WIDTH : 0] data_counter_reg;
-// always @(posedge clk) begin
-//     if (rst) begin
-//         data_counter_reg <= 0;
-//     end
-//     else if (wr_enb & rd_enb) begin
-//         data_counter_reg <= data_counter_reg;
-//     end
-//     else if (wr_enb) begin
-//         data_counter_reg <= data_counter_reg + 1'b1;
-//     end
-//     else if (rd_enb) begin
-//         data_counter_reg <= data_counter_reg - 1'b1;
-//     end
-// end
-
 assign data_counter = wr_ptr - rd_ptr;
 
 // Write data

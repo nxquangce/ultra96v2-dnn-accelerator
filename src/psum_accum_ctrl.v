@@ -175,7 +175,7 @@ always @(posedge clk) begin
 end
 
 assign psum_out_cnt_max_vld = (psum_out_cnt == i_conf_weightinterval);
-assign psum_out_cnt_premax_vld = (psum_out_cnt == (i_conf_weightinterval - 1'b1));
+assign psum_out_cnt_premax_vld = (psum_out_cnt == (i_conf_weightinterval - 1'b1)) & psum_kn0_vld;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -340,14 +340,17 @@ always @(posedge clk) begin
     kernel_done_cnt_max_reg <= i_conf_kernelshape[31 : 16] - 3'd4;
 end
 
+wire kernel_done_vld;
+assign kernel_done_vld = psum_out_cnt_max_vld & psum_kn0_vld;
+
 assign kernel_done_cnt_max_vld = (kernel_done_cnt == kernel_done_cnt_max_reg);
-assign done_vld = kernel_done_cnt_max_vld & psum_out_cnt_max_vld;
+assign done_vld = kernel_done_cnt_max_vld & kernel_done_vld;
 
 always @(posedge clk) begin
     if (rst | init) begin
         kernel_done_cnt <= 0;
     end
-    else if (psum_out_cnt_max_vld) begin
+    else if (kernel_done_vld) begin
         kernel_done_cnt <= (kernel_done_cnt_max_vld) ? 0 : kernel_done_cnt + 3'd4;
     end
 end

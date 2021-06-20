@@ -367,15 +367,15 @@ result_router result_router_0(
     .o_psum_kn3_vld     (router_kn3_vld)
     );
 
-assign valid_knx_cnt_max_vld = valid_knx_cnt == (i_conf_inputshape[7:0] - 1'b1);
-assign invalid_knx_vld = valid_knx_cnt > (i_conf_inputshape[7:0] - i_conf_kernelshape[3:0] + i_cnfx_stride);
+assign valid_knx_cnt_max_vld = valid_knx_cnt == (i_conf_inputshape[7:0] - i_cnfx_stride);
+assign invalid_knx_vld = valid_knx_cnt > (i_conf_inputshape[7:0] - i_conf_kernelshape[3:0]);
 
 always @(posedge clk) begin
     if (rst) begin
         valid_knx_cnt <= 0;
     end
     else if (router_kn0_vld) begin
-        valid_knx_cnt <= (valid_knx_cnt_max_vld) ? 0 : valid_knx_cnt + 1'b1;
+        valid_knx_cnt <= (valid_knx_cnt_max_vld) ? 0 : valid_knx_cnt + i_cnfx_stride;
     end
 end
 
@@ -399,7 +399,7 @@ always @(posedge clk) begin
     end
 end
 
-assign o_psum_end = psum_line_vld_cnt_max_vld;
+assign o_psum_end = psum_line_vld_cnt_max_vld & o_psum_kn0_vld;
 
 //// Control logic
 reg                     enb;

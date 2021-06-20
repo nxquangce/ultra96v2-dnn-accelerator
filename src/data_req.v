@@ -74,7 +74,7 @@ wire       [ADDR_WIDTH - 1 : 0] stride_base_addr;
 wire                            row_end_vld;
 reg         [REG_WIDTH - 1 : 0] row_req_cnt;
 
-assign row_end_vld = row_req_cnt == i_conf_inputshape[7:0];
+assign row_end_vld = row_req_cnt == (i_conf_inputshape[7:0] - 1'b1);
 
 always @(posedge clk) begin
     if (rst) begin
@@ -87,15 +87,15 @@ end
 
 always @(posedge clk) begin
     case (i_cnfx_stride)
-        4'd1: stride_range <= i_conf_inputshape[7:0];
-        4'd2: stride_range <= i_conf_inputshape[7:0] << 1;
-        4'd3: stride_range <= i_conf_inputshape[7:0] << 1 + i_conf_inputshape[7:0];
-        4'd4: stride_range <= i_conf_inputshape[7:0] << 2;
+        4'd1: stride_range <= 0;
+        4'd2: stride_range <= i_conf_inputshape[7:0];
+        4'd3: stride_range <= i_conf_inputshape[7:0] << 1;
+        4'd4: stride_range <= i_conf_inputshape[7:0] << 1 + i_conf_inputshape[7:0];
         default: stride_range <= 0;
     endcase
 end
 
-assign stride_base_addr = (stride_range << 1 + stride_range) >> 2;
+assign stride_base_addr = ((stride_range << 1) + stride_range) >> 2;
 
 assign stall_cache_vld = i_stall & (~i_req);
 
@@ -135,8 +135,11 @@ always @(posedge clk) begin
             default: addr_reg <= 0;
         endcase
     end
+    else if (row_end_vld) begin
+        addr_reg <= addr_reg + stride_base_addr;
+    end
     else if (o_rden) begin
-        addr_reg <= (row_end_vld) ? addr_reg + stride_base_addr + 1'b1 : addr_reg + 1'b1;
+        addr_reg <= addr_reg + 1'b1;
     end
 end
 
