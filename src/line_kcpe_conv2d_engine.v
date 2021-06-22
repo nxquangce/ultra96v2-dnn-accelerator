@@ -70,7 +70,7 @@ parameter REG_WIDTH             = 32;
 
 parameter NUM_RDATA             = NUM_KCPE;
 
-parameter KERNEL_SIZE_WIDTH     = 3;
+parameter KERNEL_SIZE_WIDTH     = 4;
 parameter NUM_KCPE_WIDTH        = 2;
 
 localparam IN_INPUT_DAT_WIDTH   = BIT_WIDTH * NUM_CHANNEL;
@@ -180,11 +180,21 @@ end
 
 
 // Activation input buffer
-wire [3:0] i_cnfx_stride;
+wire [3:0]                         i_cnfx_stride;
+wire [3:0]                         i_cnfx_numinvalidrow;
+wire [KERNEL_SIZE_WIDTH - 1 : 0]   i_cnfx_kernelwidth;
+wire [3:0]                         buffer_i_data_step;
 wire [INPUT_FF_ADDR_WIDTH - 1 : 0] buffer_o_data_counter;
 wire                               buffer_o_data_preempty;
 
-assign i_cnfx_stride = i_conf_kernelsize[19:16];
+reg [REG_WIDTH - 1 : 0] idata_req_per_row_cnt;
+wire                    idata_req_per_row_cnt_max_vld;
+wire                    idata_req_per_row_cnt_premax_vld;
+
+assign i_cnfx_stride        = i_conf_kernelsize[19:16];
+assign i_cnfx_numinvalidrow = i_conf_kernelsize[23:20];
+assign i_cnfx_kernelwidth   = i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0];
+assign buffer_i_data_step   = (idata_req_per_row_cnt_max_vld) ? (i_cnfx_numinvalidrow + 1'b1) : i_cnfx_stride;
 
 input_buffer 
     #(
@@ -199,7 +209,7 @@ input_buffer_0(
     .i_data             (i_data),
     .i_data_vld         (i_data_vld),
     .i_data_req         (i_data_req),
-    .i_step             (i_cnfx_stride),
+    .i_step             (buffer_i_data_step),
     .o_data             (buffer_o_data),
     .o_data_vld         (buffer_o_data_vld),
     .data_counter       (buffer_o_data_counter),
@@ -208,7 +218,7 @@ input_buffer_0(
     .o_half             (buffer_o_data_half)
     );
 
-assign buffer_o_data_preempty = (buffer_o_data_counter <  i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0]);
+assign buffer_o_data_preempty = (buffer_o_data_counter <  i_cnfx_kernelwidth);
 
 // Data in position
 assign engine_i_data_pos0 = buffer_o_data[IN_INPUT_DAT_WIDTH - 1 : 0];
@@ -367,8 +377,8 @@ result_router result_router_0(
     .o_psum_kn3_vld     (router_kn3_vld)
     );
 
-assign valid_knx_cnt_max_vld = valid_knx_cnt == (i_conf_inputshape[7:0] - i_cnfx_stride);
-assign invalid_knx_vld = valid_knx_cnt > (i_conf_inputshape[7:0] - i_conf_kernelshape[3:0]);
+assign valid_knx_cnt_max_vld = valid_knx_cnt == (i_conf_inputshape[7:0] - i_cnfx_numinvalidrow - 1'b1);
+assign invalid_knx_vld = valid_knx_cnt > (i_conf_inputshape[7:0] - i_cnfx_kernelwidth);
 
 always @(posedge clk) begin
     if (rst) begin
@@ -431,7 +441,7 @@ always @(posedge clk) begin
 end
 
 assign odata_req_cnt_max_vld = (odata_req_cnt == i_conf_inputrstcnt);
-assign odata_req_cnt_premax_vld = (odata_req_cnt == (i_conf_inputrstcnt - i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0]));
+assign odata_req_cnt_premax_vld = (odata_req_cnt == (i_conf_inputrstcnt - i_cnfx_kernelwidth));
 
 always @(posedge clk) begin
     if (rst) begin
@@ -468,7 +478,19 @@ always @(posedge clk) begin
     end
 end
 
-assign idata_req_cnt_max_vld = (idata_req_cnt == (i_conf_inputrstcnt - i_cnfx_stride + 1'b1));
+assign idata_req_per_row_cnt_max_vld = idata_req_per_row_cnt == (i_conf_inputshape[7:0] - i_cnfx_numinvalidrow - 1'b1);
+assign idata_req_per_row_cnt_premax_vld = idata_req_per_row_cnt == (i_conf_inputshape[7:0] - i_cnfx_numinvalidrow - i_cnfx_stride - 1'b1);
+
+always @(posedge clk) begin
+    if (rst) begin
+        idata_req_per_row_cnt <= 0;
+    end
+    else if (i_data_req) begin
+        idata_req_per_row_cnt <= (idata_req_per_row_cnt_max_vld) ? 0 : idata_req_per_row_cnt + i_cnfx_stride;
+    end
+end
+
+assign idata_req_cnt_max_vld = (idata_req_cnt == (i_conf_inputrstcnt - i_cnfx_numinvalidrow));
 assign idata_end = idata_req_cnt_max_vld;
 
 always @(posedge clk) begin
@@ -476,7 +498,7 @@ always @(posedge clk) begin
         idata_req_cnt <= 0;
     end
     else if (i_data_req) begin
-        idata_req_cnt <= (idata_req_cnt_max_vld) ? 0 : idata_req_cnt + i_cnfx_stride;
+        idata_req_cnt <= (idata_req_cnt_max_vld) ? 0 : idata_req_cnt + buffer_i_data_step;
     end
 end
 
@@ -497,7 +519,7 @@ always @(posedge clk) begin
     end
 end
 
-assign weight_line_req_cnt_max_vld = weight_line_req_cnt == (i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0] - 1'b1);
+assign weight_line_req_cnt_max_vld = weight_line_req_cnt == (i_cnfx_kernelwidth - 1'b1);
 
 always @(posedge clk) begin
     if (rst) begin
