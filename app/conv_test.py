@@ -10,7 +10,7 @@ import torch
 
 import time
 
-overlay_name = "zynqmpsoc_conv_dbg_20210604_0122"
+overlay_name = "zynqmpsoc_conv_dbg_20210622_1051"
 
 print("=== Config hardware ===")
 print(overlay_name)
@@ -229,9 +229,9 @@ def main():
     
     end_time1 = time.time()
     
-    readback_buffer = allocate(shape=(54,4), dtype=np.uint8)
-    transfer(cdma, CDMA_BRAM_WEIGHT0_ADDRESS, readback_buffer.physical_address, weight_size)
-    print(readback_buffer)
+#     readback_buffer = allocate(shape=(54,4), dtype=np.uint8)
+#     transfer(cdma, CDMA_BRAM_WEIGHT0_ADDRESS, readback_buffer.physical_address, weight_size)
+#     print(readback_buffer)
 
     
 #     print("Load weight data: %s seconds" % (end_time_load1 - start_time1))
@@ -240,7 +240,26 @@ def main():
 #     print()
     
     print("==== Perform PL Conv ====")
-    config = np.array([0, 49283, 9, 147851, 0x00080333, 66528, 49727])
+    input_shape = [224, 224, 3]
+    weight_shape = [8, 3, 3, 3]
+    stride = 1
+    
+    output_width = (input_shape[0] - weight_shape[1]) // stride + 1
+    output_shape = [output_width, output_width, weight_shape[0]]
+    inputrstcnt = output_width * input_shape[0] - 1
+    num_invalid_row = input_shape[0] - output_width * stride - 1
+    num_invalid_row = 0
+    outputsize = output_width * output_width - 1
+    conf_addr4 = (num_invalid_row << (5*4)) + (stride << (4*4)) + weight_shape[1]**2
+    weightinterval = output_width ** 2 * 3 - 1
+    kernelshape = (weight_shape[0] << (4*4)) + (weight_shape[3] << (2*4)) + (weight_shape[1] << (1*4)) + weight_shape[3]
+    inputshape = (1 << (4*4)) + (input_shape[2] << (2*4)) + input_shape[0]
+    
+#     ctrl, outputsize, kernelsize, weightinterval, kernelshape, inputshape, inputrstcnt
+#     config = np.array([0, 49283, 0x00010009, 147851, 0x00040333, 0x000103e0, 49727])
+#     config = np.array([0, 12320, 0x00120009, 36962, 0x00080333, 0x000103e0, 24863])
+#     config = np.array([0, 5475, 0x00130009, 16427, 0x00080333, 0x000103e0, 16575])
+    config = np.array([0, outputsize, conf_addr4, weightinterval, kernelshape, inputshape, inputrstcnt])
     regfile = reg.array[0:7]
     
     
@@ -264,10 +283,10 @@ def main():
     
     print("Config engine registers")
     print("outputsize    : %d", outputsize)
-    print("kernelsize    : %d", kernelsize)
+    print("kernelsize    : %h", hex(kernelsize))
     print("weightinterval: %d", weightinterval)
-    print("kernelshape   : %d", kernelshape)
-    print("inputshape    : %d", inputshape)
+    print("kernelshape   : %h", hex(kernelshape))
+    print("inputshape    : %h", hex(inputshape))
     print("inputrstcnt   : %d", inputrstcnt)
     print()
     print("Start engine")
@@ -328,41 +347,43 @@ def main():
     
     reg.write(0, 4) # allow ps access output memory
 #     regfile[0] = 4
-    
+
     print("Transfer output to PS")
-    output_buffer = allocate(shape=(222*4,222,4), dtype=np.uint8)
-    output_size = 222 * 222 * 8
+    output_buffer = allocate(shape=(output_width * weight_shape[0]//4, output_width,4), dtype=np.uint8)
+#     output_buffer = allocate(shape=(222*4,222,4), dtype=np.uint8)
+    output_size = output_width * output_width * 4 * weight_shape[0]//4
 #     transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address, output_size)
     transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address, 32768*4)
     transfer(cdma, CDMA_BRAM_OUTPUT1_ADDRESS, output_buffer.physical_address + 32768*4, 32768*4)
     transfer(cdma, CDMA_BRAM_OUTPUT2_ADDRESS, output_buffer.physical_address + 2*32768*4, 32768*4)
     transfer(cdma, CDMA_BRAM_OUTPUT3_ADDRESS, output_buffer.physical_address + 3*32768*4, output_size - 3*32768*4)
-    
+
     end_time2 = time.time()
 
-#     reg.write(4 * 4, 0x00100333) # kernelshape 4
-    reg.write(0, 17) # continue engine
-#     reg.write(0, 1) # continue engine
-#     regfile[0] = 17
-#     regfile[0] = 1
-    
-    status = reg.read(7 * 4)
-    print(status)
-    
-    while (status == 0):
+    if (inputshape == 0x00080333):
+    #     reg.write(4 * 4, 0x00100333) # kernelshape 4
+        reg.write(0, 17) # continue engine
+    #     reg.write(0, 1) # continue engine
+    #     regfile[0] = 17
+    #     regfile[0] = 1
+
         status = reg.read(7 * 4)
-        
-    print(status)
-    
-    end_time3 = time.time()
-    
-    reg.write(0, 4) # allow ps access output memory
-    
-    print("Transfer output to PS")
-    transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address + output_size, 32768*4)
-    transfer(cdma, CDMA_BRAM_OUTPUT1_ADDRESS, output_buffer.physical_address + output_size + 32768*4, 32768*4)
-    transfer(cdma, CDMA_BRAM_OUTPUT2_ADDRESS, output_buffer.physical_address + output_size + 2*32768*4, 32768*4)
-    transfer(cdma, CDMA_BRAM_OUTPUT3_ADDRESS, output_buffer.physical_address + output_size + 3*32768*4, output_size - 3*32768*4)
+        print(status)
+
+        while (status == 0):
+            status = reg.read(7 * 4)
+
+        print(status)
+
+        end_time3 = time.time()
+
+        reg.write(0, 4) # allow ps access output memory
+
+        print("Transfer output to PS")
+        transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address + output_size, 32768*4)
+        transfer(cdma, CDMA_BRAM_OUTPUT1_ADDRESS, output_buffer.physical_address + output_size + 32768*4, 32768*4)
+        transfer(cdma, CDMA_BRAM_OUTPUT2_ADDRESS, output_buffer.physical_address + output_size + 2*32768*4, 32768*4)
+        transfer(cdma, CDMA_BRAM_OUTPUT3_ADDRESS, output_buffer.physical_address + output_size + 3*32768*4, output_size - 3*32768*4)
     
     print()
     print("=== Dbg Status ===")
@@ -404,8 +425,8 @@ def main():
     print()
     
     print("Processing time 1            : %s seconds" % (end_time_load2 - start_time2))
-    print("Processing time 2            : %s seconds" % (end_time3 - end_time2))
-    print("Processing time with overflow: %s seconds" % (end_time3 - start_time2))
+#     print("Processing time 2            : %s seconds" % (end_time3 - end_time2))
+#     print("Processing time with overflow: %s seconds" % (end_time3 - start_time2))
     print()
     
     print("Transfer output time         : %s seconds" % (end_time2 - end_time_load2))
