@@ -10,7 +10,7 @@
 // Target Devices: ultra96v2
 // Tool Versions: 2018.2
 // Description: A FIFO which can read 3 data at a time then remove the first data.
-// 
+//      Delay = 1
 // Dependencies: 
 // 
 // Revision:

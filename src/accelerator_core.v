@@ -30,14 +30,6 @@ module accelerator_core(
     o_weight_req,
     i_weight,
     i_weight_vld,
-    // o_psum_kn0,
-    // o_psum_kn0_vld,
-    // o_psum_kn1,
-    // o_psum_kn1_vld,
-    // o_psum_kn2,
-    // o_psum_kn2_vld,
-    // o_psum_kn3,
-    // o_psum_kn3_vld,
     memctrl0_wadd,
     memctrl0_wren,
     memctrl0_idat,
@@ -85,6 +77,9 @@ parameter IN_WEIGHT_DAT_WIDTH = BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL;
 
 parameter OUTPUT_MEM_DELAY = 1;
 
+parameter STRIDE_WIDTH      = 4;
+parameter PADDING_WIDTH     = 4;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
 input  wire                               clk;
@@ -96,14 +91,6 @@ input  wire [IN_INPUT_DAT_WIDTH  - 1 : 0] i_data;
 input  wire [IN_WEIGHT_DAT_WIDTH - 1 : 0] i_weight;
 input  wire                               i_data_vld;
 input  wire                               i_weight_vld;
-// output wire           [BIT_WIDTH - 1 : 0] o_psum_kn0;
-// output wire           [BIT_WIDTH - 1 : 0] o_psum_kn1;
-// output wire           [BIT_WIDTH - 1 : 0] o_psum_kn2;
-// output wire           [BIT_WIDTH - 1 : 0] o_psum_kn3;
-// output wire                               o_psum_kn0_vld;
-// output wire                               o_psum_kn1_vld;
-// output wire                               o_psum_kn2_vld;
-// output wire                               o_psum_kn3_vld;
 output wire          [ADDR_WIDTH - 1 : 0] memctrl0_wadd;
 output wire                               memctrl0_wren;
 output wire          [DATA_WIDTH - 1 : 0] memctrl0_idat;
@@ -149,6 +136,28 @@ wire                      rst_p;
 wire                      kcpe_done;
 wire                      psum_done;
 
+wire  [STRIDE_WIDTH - 1 : 0] i_cnfx_stride;
+wire [PADDING_WIDTH - 1 : 0] i_cnfx_padding;
+reg [7 : 0]                  output_width;
+wire [15:0]                  i_cnfx_outputshape;
+
+assign i_cnfx_stride  = i_conf_kernelsize[19:16];
+assign i_cnfx_padding = i_conf_kernelsize[27:24];
+
+wire [7 : 0] valid_input_shape;
+assign valid_input_shape = (i_conf_inputshape[7:0] + i_cnfx_padding - i_conf_kernelshape[3:0]);
+
+always @(posedge clk) begin
+    case(i_cnfx_stride)
+        4'd1: output_width <= valid_input_shape + 1'b1;
+        4'd2: output_width <= (valid_input_shape) >> 1 + 1'b1;
+        4'd3: output_width <= (valid_input_shape) >> 1 - valid_input_shape + 1'b1;
+        default: output_width <= valid_input_shape + 1'b1;
+    endcase
+end
+
+assign i_cnfx_outputshape = {i_conf_kernelshape[23:16], output_width};
+
 assign rst_soft = i_conf_ctrl[1];
 assign rst_p = rst | rst_soft;
 
@@ -179,6 +188,7 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .i_conf_inputrstcnt                 (i_conf_inputrstcnt),
     .i_conf_outputsize                  (i_conf_outputsize),
     .i_conf_kernelsize                  (i_conf_kernelsize),
+    .i_cnfx_outputshape                 (i_cnfx_outputshape),
     .o_done                             (kcpe_done),
     .dbg_linekcpe_valid_knx_cnt         (dbg_linekcpe_valid_knx_cnt),
     .dbg_linekcpe_psum_line_vld_cnt     (dbg_linekcpe_psum_line_vld_cnt),
@@ -215,7 +225,11 @@ psum_accum_ctrl_0(
     .i_conf_ctrl                (i_conf_ctrl),
     .i_conf_weightinterval      (i_conf_weightinterval),
     .i_conf_outputsize          (i_conf_outputsize),
+    .i_conf_inputshape          (i_conf_inputshape),
     .i_conf_kernelshape         (i_conf_kernelshape),
+    .i_cnfx_outputshape         (i_cnfx_outputshape),
+    .i_cnfx_stride              (i_cnfx_stride),
+    .i_cnfx_padding             (i_cnfx_padding),
     .o_done                     (psum_done),
     .dbg_psumacc_base_addr      (dbg_psumacc_base_addr),
     .dbg_psumacc_psum_out_cnt   (dbg_psumacc_psum_out_cnt),

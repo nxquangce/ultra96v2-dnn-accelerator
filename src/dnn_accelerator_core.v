@@ -380,30 +380,30 @@ accelerator_core
     .OUTPUT_MEM_DELAY       (OUTPUT_MEM_DELAY + 1)
     )
 accelerator_core_inst(
-    .clk                    (clk),
-    .rst                    (rst),
-    .o_data_req             (core_o_data_req),
-    .o_data_end             (core_o_data_end),
-    .i_data                 (core_i_data),
-    .i_data_vld             (core_i_data_vld),
-    .o_weight_req           (core_o_weight_req),
-    .i_weight               (core_i_weight),
-    .i_weight_vld           (core_i_weight_vld),
-    .memctrl0_wadd          (core_memctrl0_wadd),
-    .memctrl0_wren          (core_memctrl0_wren),
-    .memctrl0_idat          (core_memctrl0_idat),
-    .memctrl0_radd          (core_memctrl0_radd),
-    .memctrl0_rden          (core_memctrl0_rden),
-    .memctrl0_odat          (core_memctrl0_odat),
-    .memctrl0_ovld          (core_memctrl0_ovld),
-    .i_conf_ctrl            (i_conf_ctrl),
-    .i_conf_outputsize      (i_conf_outputsize),
-    .i_conf_kernelsize      (i_conf_kernelsize),
-    .i_conf_weightinterval  (i_conf_weightinterval),
-    .i_conf_kernelshape     (i_conf_kernelshape),
-    .i_conf_inputshape      (i_conf_inputshape),
-    .i_conf_inputrstcnt     (i_conf_inputrstcnt),
-    .o_conf_status          (o_conf_status),
+    .clk                                (clk),
+    .rst                                (rst),
+    .o_data_req                         (core_o_data_req),
+    .o_data_end                         (core_o_data_end),
+    .i_data                             (core_i_data),
+    .i_data_vld                         (core_i_data_vld),
+    .o_weight_req                       (core_o_weight_req),
+    .i_weight                           (core_i_weight),
+    .i_weight_vld                       (core_i_weight_vld),
+    .memctrl0_wadd                      (core_memctrl0_wadd),
+    .memctrl0_wren                      (core_memctrl0_wren),
+    .memctrl0_idat                      (core_memctrl0_idat),
+    .memctrl0_radd                      (core_memctrl0_radd),
+    .memctrl0_rden                      (core_memctrl0_rden),
+    .memctrl0_odat                      (core_memctrl0_odat),
+    .memctrl0_ovld                      (core_memctrl0_ovld),
+    .i_conf_ctrl                        (i_conf_ctrl),
+    .i_conf_outputsize                  (i_conf_outputsize),
+    .i_conf_kernelsize                  (i_conf_kernelsize),
+    .i_conf_weightinterval              (i_conf_weightinterval),
+    .i_conf_kernelshape                 (i_conf_kernelshape),
+    .i_conf_inputshape                  (i_conf_inputshape),
+    .i_conf_inputrstcnt                 (i_conf_inputrstcnt),
+    .o_conf_status                      (o_conf_status),
     .dbg_linekcpe_valid_knx_cnt         (dbg_linekcpe_valid_knx_cnt),
     .dbg_linekcpe_psum_line_vld_cnt     (dbg_linekcpe_psum_line_vld_cnt),
     .dbg_linekcpe_idata_req_cnt         (dbg_linekcpe_idata_req_cnt),
@@ -424,8 +424,10 @@ wire                      pixelconcat_ostall;
 wire [ADDR_WIDTH - 1 : 0] datareq_o_addr;
 wire                      datareq_o_rden;
 wire                [3:0] i_cnfx_stride;
+wire                [3:0] i_cnfx_padding;
 
-assign i_cnfx_stride = i_conf_kernelsize[18:16];
+assign i_cnfx_stride = i_conf_kernelsize[19:16];
+assign i_cnfx_padding = i_conf_kernelsize[27:24];
 
 data_req data_req_inst(
     .clk                    (clk),
@@ -436,6 +438,7 @@ data_req data_req_inst(
     .o_addr                 (datareq_o_addr),
     .o_rden                 (datareq_o_rden),
     .i_cnfx_stride          (i_cnfx_stride),
+    .i_cnfx_padding         (i_cnfx_padding),
     .i_conf_inputshape      (i_conf_inputshape),
     .i_conf_kernelshape     (i_conf_kernelshape),
     .dbg_datareq_knlinex_cnt(dbg_datareq_knlinex_cnt),
