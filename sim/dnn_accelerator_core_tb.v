@@ -256,7 +256,7 @@ initial begin
     i_conf_weightinterval <= 224 * 224 * 3 - 1;
     i_conf_kernelshape <= 32'h0008_0333; // h0020_0333
     i_conf_inputshape <= 32'h0001_03e0;
-    i_conf_inputrstcnt <= 32'd49727; // 224 * 222 - 1
+    i_conf_inputrstcnt <= 32'd49951; // 224 * 223 - 1
     i_conf_outputsize <= 32'd50175; // 224 * 224 - 1
 
     #10
