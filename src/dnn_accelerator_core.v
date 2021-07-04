@@ -169,7 +169,9 @@ module dnn_accelerator_core(
     dbg_psumacc_rd_addr,
     dbg_datareq_knlinex_cnt,
     dbg_datareq_addr_reg,
-
+    i_conf_addr,
+    i_conf_data,
+    dbg_reg_data,
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -373,6 +375,9 @@ output [REG_WIDTH - 1 : 0] dbg_psumacc_rd_addr;
 output [REG_WIDTH - 1 : 0] dbg_datareq_knlinex_cnt;
 output [REG_WIDTH - 1 : 0] dbg_datareq_addr_reg;
 
+input  [REG_WIDTH - 1 : 0] i_conf_addr;
+input  [REG_WIDTH - 1 : 0] i_conf_data;
+output [REG_WIDTH - 1 : 0] dbg_reg_data;
 
 // Core
 accelerator_core
@@ -850,6 +855,109 @@ psum_bram_ctrl_inst_7(
     );
 
 `endif
+////////////////////////////////////////////////////////////////////
+// Debug
+wire [REG_WIDTH - 1 : 0] ps_addr;
+wire                     ps_wren;
+wire [REG_WIDTH - 1 : 0] ps_wdat;
+wire                     ps_rden;
+wire [REG_WIDTH - 1 : 0] ps_rdat;
+wire                     ps_rvld;
+
+wire [REG_WIDTH - 1 : 0] addr4_wr_cnt;
+wire [REG_WIDTH - 1 : 0] addr4_wr_cnt_rdat;
+wire                     addr4_wr_cnt_rvld;
+wire                     addr4_wr_vld;
+wire                     addr4_wr_stk_vld [2 : 0];
+wire                     addr4_wr_stk_rvld [2 : 0];
+wire [REG_WIDTH - 1 : 0] addr4_wr_stk_rdat [2 : 0];
+
+assign ps_rdat = addr4_wr_stk_rdat[0] | addr4_wr_stk_rdat[1] | addr4_wr_stk_rdat[2] | addr4_wr_cnt_rdat;
+assign ps_rvld = addr4_wr_stk_rvld[0] | addr4_wr_stk_rvld[1] | addr4_wr_stk_rvld[2] | addr4_wr_cnt_rvld;
+
+reg_access_ps_gen ps_dbg(
+    .clk        (clk),
+    .rst        (rst),
+    .host_addr  (i_conf_addr),
+    .host_idat  (i_conf_data),
+    .host_odat  (dbg_reg_data),
+    .user_addr  (ps_addr),
+    .user_wren  (ps_wren),
+    .user_wdat  (ps_wdat),
+    .user_rden  (ps_rden),
+    .user_rdat  (ps_rdat),
+    .user_rvld  (ps_rvld)
+    );
+
+assign addr4_wr_vld = mem_wren_6 & (mem_addr_6 == 32'd4);
+
+
+counter_reg #(
+    .REG_ADDR   (32'h00000000)
+    )
+addr4_wr_cnt_reg(
+    .clk         (clk),
+    .rst         (rst),
+    .ienb        (addr4_wr_vld),
+    .imax        (32'hffffffff),
+    .ostatus     (addr4_wr_cnt),
+    .ps_addr     (ps_addr),
+    .ps_rden     (ps_rden),
+    .ps_rdat     (addr4_wr_cnt_rdat),
+    .ps_rvld     (addr4_wr_cnt_rvld)
+    );
+
+assign addr4_wr_stk_vld[0] = addr4_wr_vld & (addr4_wr_cnt == 32'd0);
+assign addr4_wr_stk_vld[1] = addr4_wr_vld & (addr4_wr_cnt == 32'd1);
+assign addr4_wr_stk_vld[2] = addr4_wr_vld & (addr4_wr_cnt == 32'd2);
+
+sticky_reg #(
+    .REG_ADDR   (32'h00000001)
+    )
+addr4_wr_stk0(
+    .clk        (clk),
+    .rst        (rst),
+    .idat       (mem_idat_6),
+    .ienb       (addr4_wr_stk_vld[0]),
+    .ps_addr    (ps_addr),
+    .ps_wren    (ps_wren),
+    .ps_wdat    (ps_wdat),
+    .ps_rden    (ps_rden),
+    .ps_rdat    (addr4_wr_stk_rdat[0]),
+    .ps_rvld    (addr4_wr_stk_rvld[0])
+    );
+
+sticky_reg #(
+    .REG_ADDR   (32'h00000002)
+    )
+addr4_wr_stk1(
+    .clk        (clk),
+    .rst        (rst),
+    .idat       (mem_idat_6),
+    .ienb       (addr4_wr_stk_vld[1]),
+    .ps_addr    (ps_addr),
+    .ps_wren    (ps_wren),
+    .ps_wdat    (ps_wdat),
+    .ps_rden    (ps_rden),
+    .ps_rdat    (addr4_wr_stk_rdat[1]),
+    .ps_rvld    (addr4_wr_stk_rvld[1])
+    );
+
+sticky_reg #(
+    .REG_ADDR   (32'h00000003)
+    )
+addr4_wr_stk2(
+    .clk        (clk),
+    .rst        (rst),
+    .idat       (mem_idat_6),
+    .ienb       (addr4_wr_stk_vld[2]),
+    .ps_addr    (ps_addr),
+    .ps_wren    (ps_wren),
+    .ps_wdat    (ps_wdat),
+    .ps_rden    (ps_rden),
+    .ps_rdat    (addr4_wr_stk_rdat[2]),
+    .ps_rvld    (addr4_wr_stk_rvld[2])
+    );
 
 // Config registers
 // config_regfile #

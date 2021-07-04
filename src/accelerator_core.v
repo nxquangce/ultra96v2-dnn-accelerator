@@ -125,16 +125,11 @@ output wire           [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
 wire  [BIT_WIDTH * 2 - 1 : 0] accum_i_psum [NUM_KERNEL - 1 : 0];
 wire     [NUM_KERNEL - 1 : 0] accum_i_psum_vld;
 wire                          accum_i_psum_end;
-// wire [BIT_WIDTH - 1 : 0]                accum_o_psum [NUM_KERNEL - 1 : 0];
-// wire [NUM_KERNEL - 1 : 0]               accum_o_psum_vld;
 
-// wire [(BIT_WIDTH * NUM_KERNEL) - 1 : 0] engine_i_psum;
-// wire                                    engine_i_psum_vld;
-
-wire                      rst_soft;
-wire                      rst_p;
-wire                      kcpe_done;
-wire                      psum_done;
+wire                         rst_soft;
+wire                         rst_p;
+wire                         kcpe_done;
+wire                         psum_done;
 
 wire  [STRIDE_WIDTH - 1 : 0] i_cnfx_stride;
 wire [PADDING_WIDTH - 1 : 0] i_cnfx_padding;
@@ -171,8 +166,6 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .o_weight_req                       (o_weight_req),
     .i_weight                           (i_weight),
     .i_weight_vld                       (i_weight_vld),
-    // .i_psum                             (engine_i_psum),
-    // .i_psum_vld                         (engine_i_psum_vld),
     .o_psum_kn0                         (accum_i_psum[0]),
     .o_psum_kn0_vld                     (accum_i_psum_vld[0]),
     .o_psum_kn1                         (accum_i_psum[1]),

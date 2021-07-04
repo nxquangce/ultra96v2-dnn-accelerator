@@ -33,8 +33,6 @@ module line_kcpe_conv2d_engine(
     o_weight_req,
     i_weight,
     i_weight_vld,
-    // i_psum,
-    // i_psum_vld,
     o_psum_kn0,
     o_psum_kn0_vld,
     o_psum_kn1,
@@ -108,7 +106,6 @@ output wire                               o_psum_kn1_vld;
 output wire                               o_psum_kn2_vld;
 output wire                               o_psum_kn3_vld;
 output wire                               o_psum_end;
-// output wire [REG_WIDTH * NUM_KCPE - 1 : 0]      err_psum_vld;
 
 input  wire           [REG_WIDTH - 1 : 0] i_conf_ctrl;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelshape;
@@ -199,9 +196,7 @@ wire                               buffer_o_data_preempty;
 
 reg [REG_WIDTH - 1 : 0] idata_req_per_row_cnt;
 wire                    idata_req_per_row_cnt_max_vld;
-wire                    idata_req_per_row_cnt_premax_vld;
 wire                    idata_req_per_row_cnt_sta_vld;
-wire                    idata_req_per_row_cnt_end_vld;
 
 reg [PADDING_WIDTH - 1 : 0] pad_sta;
 reg [PADDING_WIDTH - 1 : 0] pad_end;
@@ -229,9 +224,7 @@ always @(posedge clk) begin
 end
 
 assign idata_req_per_row_cnt_sta_vld = (idata_req_per_row_cnt == 0) & ~idata_req_per_row_cnt_sta_vld_cache;
-assign idata_req_per_row_cnt_end_vld = (idata_req_per_row_cnt == i_cnfx_inputwidth - i_cnfx_numinvalidrow - 1'b1 + pad_end);
 assign idata_req_per_row_cnt_max_vld = idata_req_per_row_cnt == (i_cnfx_inputwidth - i_cnfx_numinvalidrow - 1'b1);
-assign idata_req_per_row_cnt_premax_vld = idata_req_per_row_cnt == (i_cnfx_inputwidth - i_cnfx_numinvalidrow - i_cnfx_stride - 1'b1);
 
 always @(posedge clk) begin
     if (rst) begin
@@ -249,7 +242,7 @@ reg idata_req_per_row_cnt_sta_vld_pp;
 reg idata_req_per_row_cnt_end_vld_pp;
 always @(posedge clk) begin
     idata_req_per_row_cnt_sta_vld_pp <= idata_req_per_row_cnt_sta_vld;
-    idata_req_per_row_cnt_end_vld_pp <= idata_req_per_row_cnt_end_vld;
+    idata_req_per_row_cnt_end_vld_pp <= idata_req_per_row_cnt_max_vld;
 end
 
 input_buffer 
@@ -556,13 +549,24 @@ always @(posedge clk) begin
     end
 end
 
-wire [REG_WIDTH - 1 : 0] add_data_req_num;
-wire [REG_WIDTH - 1 : 0] data_req_max;
+reg [REG_WIDTH - 1 : 0] add_data_req_num;
+reg [REG_WIDTH - 1 : 0] data_req_max;
 
-assign add_data_req_num = ((weight_line_done_cnt <= pad_sta) | ((i_cnfx_kernelwidth - weight_line_done_cnt) < pad_end)) ? 
+// fix timing
+always @(posedge clk) begin
+    if (rst) begin
+        add_data_req_num <= 0;
+    end
+    else begin
+        add_data_req_num <= ((weight_line_done_cnt <= pad_sta) | ((i_cnfx_kernelwidth - weight_line_done_cnt) < pad_end)) ? 
                             0 : i_cnfx_inputwidth;
+    end
+end
 
-assign data_req_max = i_conf_inputrstcnt + add_data_req_num;
+// fix timing
+always @(posedge clk) begin
+    data_req_max <= i_conf_inputrstcnt + add_data_req_num;
+end
 
 assign odata_req_cnt_max_vld = (odata_req_cnt == data_req_max);
 assign odata_req_cnt_premax_vld = (odata_req_cnt == (data_req_max - i_cnfx_kernelwidth));
@@ -601,7 +605,18 @@ always @(posedge clk) begin
     end
 end
 
-assign idata_req_cnt_max_vld = (idata_req_cnt == (i_conf_inputrstcnt + add_data_req_num - i_cnfx_numinvalidrow));
+// fix timing
+reg [REG_WIDTH - 1 : 0] idata_req_cnt_max;
+always @(posedge clk) begin
+    if (rst) begin
+        idata_req_cnt_max <= 0;
+    end
+    else begin
+        idata_req_cnt_max <= i_conf_inputrstcnt + add_data_req_num - i_cnfx_numinvalidrow;
+    end
+end
+
+assign idata_req_cnt_max_vld = (idata_req_cnt == idata_req_cnt_max);
 assign idata_end = idata_req_cnt_max_vld;
 
 always @(posedge clk) begin

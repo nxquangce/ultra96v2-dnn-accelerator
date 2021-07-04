@@ -145,7 +145,9 @@ assign bramctrl_wr_sel = psumctrl_wadd[MEM_ADDR_WIDTH + NUM_MEM_WIDTH - 1 : MEM_
 assign bramctrl_wraddr = {{(ADDR_WIDTH - MEM_ADDR_WIDTH){1'b0}}, psumctrl_wadd[MEM_ADDR_WIDTH - 1 : 0]};
 
 always @(posedge clk) begin
-    bramctrl_rd_sel_cache <= bramctrl_rd_sel;
+    if (psumctrl_rden) begin
+        bramctrl_rd_sel_cache <= bramctrl_rd_sel;
+    end
 end
 
 always @(*) begin

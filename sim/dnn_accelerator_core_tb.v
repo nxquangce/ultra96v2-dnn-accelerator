@@ -217,7 +217,7 @@ end
 
 localparam WEIGHT_INTERVAL = 32'd147851; // 222 * 222 * 3 - 1
 initial begin
-    i_conf_ctrl <= 0;
+    i_conf_ctrl <= 2;
     i_conf_cnt <= 0;
     i_conf_kernelsize <= 0;
     i_conf_weightinterval <= 0;
@@ -252,14 +252,14 @@ initial begin
     // i_conf_outputsize <= 74 * 74 - 1;
 
     // Padding = 2, stride = 1
-    i_conf_kernelsize <= 32'h02010009;
+    i_conf_kernelsize <= 32'h02110009;
     i_conf_weightinterval <= 224 * 224 * 3 - 1;
     i_conf_kernelshape <= 32'h0008_0333; // h0020_0333
     i_conf_inputshape <= 32'h0001_03e0;
     i_conf_inputrstcnt <= 32'd49951; // 224 * 223 - 1
     i_conf_outputsize <= 32'd50175; // 224 * 224 - 1
 
-    #10
+    #20
     i_conf_ctrl <= 32'b1;
 
     // #300000.5

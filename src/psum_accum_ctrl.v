@@ -32,7 +32,6 @@ module psum_accum_ctrl(
     psum_kn3_dat,
     psum_kn3_vld,
     psum_knx_end,
-    psum_pad_sta,
     
     memctrl0_wadd,
     memctrl0_wren,
@@ -86,7 +85,6 @@ input                       psum_kn1_vld;
 input                       psum_kn2_vld;
 input                       psum_kn3_vld;
 input                       psum_knx_end;
-input                       psum_pad_sta;
 
 output [ADDR_WIDTH - 1 : 0] memctrl0_wadd;
 output                      memctrl0_wren;
@@ -163,14 +161,24 @@ always @(posedge clk) begin
 end
 
 wire [3 : 0] pad_sta_row;
+wire [3 : 0] pad_row;
 assign output_width = i_cnfx_outputshape[7:0];
 assign pad_sta_row  = pad_sta - i_cnfx_stride + 1'b1;
 assign pad_sta_addr = (pad_sta_row == 4'd0) ? 0:
                       (pad_sta_row == 4'd1) ? output_width :
                       (pad_sta_row == 4'd2) ? output_width << 1 : 0;
 
-assign psum_out_cnt_max_vld = (psum_out_cnt == i_conf_weightinterval);
-assign psum_out_cnt_premax_vld = (psum_out_cnt == (i_conf_weightinterval - 1'b1)) & psum_kn0_vld;
+wire [REG_WIDTH - 1 : 0] psum_out_cnt_max;
+wire [REG_WIDTH - 1 : 0] num_skip_interval;
+assign num_skip_interval = (i_cnfx_padding == 4'd0) ? 0 :
+                           (i_cnfx_padding == 4'd1) ? output_width :
+                           (i_cnfx_padding == 4'd2) ? output_width << 1:
+                           (i_cnfx_padding == 4'd3) ? output_width << 1 + output_width :
+                           (i_cnfx_padding == 4'd4) ? output_width << 2 : 0;
+
+assign psum_out_cnt_max = i_conf_weightinterval - num_skip_interval;
+assign psum_out_cnt_max_vld = (psum_out_cnt == psum_out_cnt_max);
+assign psum_out_cnt_premax_vld = (psum_out_cnt == (psum_out_cnt_max - 1'b1)) & psum_kn0_vld;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -190,8 +198,11 @@ always @(posedge clk) begin
     end
 end
 
+wire output_end_vld;
+assign output_end_vld = psum_out_cnt_max_vld & psum_kn0_vld;
+
 always @(posedge clk) begin
-    if (rst) begin
+    if (rst | output_end_vld) begin
         rd_addr <= base_addr + pad_sta_addr;
     end
     else if(psum_knx_end | con_enb_vld_pp) begin
