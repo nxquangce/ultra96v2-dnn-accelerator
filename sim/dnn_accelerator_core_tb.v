@@ -45,6 +45,7 @@ reg [REG_WIDTH - 1 : 0] i_conf_kernelshape;
 reg [REG_WIDTH - 1 : 0] i_conf_inputshape;
 reg [REG_WIDTH - 1 : 0] i_conf_outputsize;
 reg [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
+reg [REG_WIDTH - 1 : 0] i_conf_outputshape;
 wire [REG_WIDTH - 1 : 0] o_conf_status;
 
 wire [ADDR_WIDTH - 1 : 0] mem_addr [6 : 0];
@@ -65,6 +66,7 @@ dnn_accelerator_core dut(
     .i_conf_kernelshape     (i_conf_kernelshape),
     .i_conf_inputshape      (i_conf_inputshape),
     .i_conf_inputrstcnt     (i_conf_inputrstcnt),
+    .i_conf_outputshape     (i_conf_outputshape),
     .o_conf_status          (o_conf_status),
 
     .mem_addr_0             (mem_addr[0]),
@@ -224,6 +226,7 @@ initial begin
     i_conf_kernelshape <= 0;
     i_conf_inputshape <= 0;
     i_conf_inputrstcnt <= 0;
+    i_conf_outputshape <= 0;
     i_conf_outputsize <= 0;
 
     #50
@@ -234,15 +237,17 @@ initial begin
     // i_conf_inputshape <= 32'h0001_03e0;
     // i_conf_inputrstcnt <= 32'd49727; // 224 * 222 - 1
     // i_conf_outputsize <= 32'd49283;
+    // i_conf_outputshape <= 32'h0000_08de;
 
     // Stride = 2
-    // i_conf_kernelsize <= 32'h00120009;
-    // i_conf_weightinterval <= 111 * 111 * 3 - 1;
-    // i_conf_kernelshape <= 32'h0008_0333; // h0020_0333
     // i_conf_inputshape <= 32'h0001_03e0;
-    // i_conf_inputrstcnt <= 32'd24863; // 224 * 111 - 1
+    // i_conf_kernelshape <= 32'h0008_0333; // h0020_0333
+    // i_conf_kernelsize <= 32'h00120009;
+    // i_conf_outputshape <= 32'h0000_086f;
     // i_conf_outputsize <= 32'd12320; // 111 * 111 - 1
-
+    // i_conf_weightinterval <= 111 * 111 * 3 - 1;
+    // i_conf_inputrstcnt <= 32'd24863; // 224 * 111 - 1
+    
     // Stride = 3
     // i_conf_kernelsize <= 32'h00130009;
     // i_conf_weightinterval <= 74 * 74 * 3 - 1;
@@ -250,14 +255,26 @@ initial begin
     // i_conf_inputshape <= 32'h0001_03e0;
     // i_conf_inputrstcnt <= 224 * 74 - 1;
     // i_conf_outputsize <= 74 * 74 - 1;
+    // i_conf_outputshape <= 32'h0000_084a;
 
     // Padding = 2, stride = 1
-    i_conf_kernelsize <= 32'h02110009;
-    i_conf_weightinterval <= 224 * 224 * 3 - 1;
-    i_conf_kernelshape <= 32'h0008_0333; // h0020_0333
+    // i_conf_inputshape <= 32'h0001_03e0;
+    // i_conf_kernelshape <= 32'h0008_0333; // h0020_0333
+    // i_conf_kernelsize <= 32'h02110009;
+    // i_conf_outputshape <= 32'h0000_08e0;
+    // i_conf_outputsize <= 32'd50175; // 224 * 224 - 1
+    // i_conf_weightinterval <= 224 * 224 * 3 - 1;
+    // i_conf_inputrstcnt <= 32'd49951; // 224 * 223 - 1
+
+    // Padding = 1, stride = 2
     i_conf_inputshape <= 32'h0001_03e0;
-    i_conf_inputrstcnt <= 32'd49951; // 224 * 223 - 1
-    i_conf_outputsize <= 32'd50175; // 224 * 224 - 1
+    i_conf_kernelshape <= 32'h0008_0333;
+    i_conf_kernelsize <= 32'h01120009;
+    i_conf_outputshape <= 32'h0000_0870;
+    i_conf_outputsize <= 32'd12543; // 112 * 112 - 1
+    i_conf_weightinterval <= 32'd37631; // 112 * 112 * 3 - 1;
+    i_conf_inputrstcnt <= 32'd24863; // 224 * 111 - 1
+    i_conf_inputrstcnt <= 32'd25087; // 224 * 112 - 1
 
     #20
     i_conf_ctrl <= 32'b1;

@@ -50,6 +50,7 @@ parameter NUM_KERNEL    = 4;
 parameter NUM_CHANNEL   = 3;
 parameter NUM_RDATA     = 3;
 parameter FF_DEPTH      = NUM_RDATA;
+parameter FF_DELAY      = 1;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
@@ -81,6 +82,18 @@ reg [DAT_WIDTH * NUM_CHANNEL - 1 : 0] weight_kn1_reg [NUM_RDATA - 1 : 0];
 reg [DAT_WIDTH * NUM_CHANNEL - 1 : 0] weight_kn2_reg [NUM_RDATA - 1 : 0];
 reg [DAT_WIDTH * NUM_CHANNEL - 1 : 0] weight_kn3_reg [NUM_RDATA - 1 : 0];
 reg [NUM_RDATA - 1 : 0] weight_val_reg [NUM_KERNEL - 1 : 0];
+
+// Delay
+reg [FF_DELAY - 1 : 0] i_data_req_pp;
+
+integer i;
+always @(posedge clk) begin
+    i_data_req_pp[0] <= i_data_req;
+
+    for (i = 0; i < (FF_DEPTH - 1); i = i + 1) begin
+        i_data_req_pp[i + 1] <= i_data_req_pp[i];
+    end
+end
 
 // Cache weight data
 always @(posedge clk) begin
@@ -132,7 +145,7 @@ end
 
 // Cache valid register
 always @(posedge clk) begin
-    if (rst | i_data_req) begin
+    if (rst | i_data_req_pp[FF_DELAY - 1]) begin
         weight_val_reg[0] <= 0;
         weight_val_reg[1] <= 0;
         weight_val_reg[2] <= 0;
@@ -165,10 +178,10 @@ end
 assign o_full = &weight_val_reg[0] & &weight_val_reg[1] & &weight_val_reg[2] & &weight_val_reg[3];
 
 // Output data valid
-assign o_data_3ch_kn0_val = &weight_val_reg[0] & i_data_req;
-assign o_data_3ch_kn1_val = &weight_val_reg[1] & i_data_req;
-assign o_data_3ch_kn2_val = &weight_val_reg[2] & i_data_req;
-assign o_data_3ch_kn3_val = &weight_val_reg[3] & i_data_req;
+assign o_data_3ch_kn0_val = &weight_val_reg[0] & i_data_req_pp[FF_DELAY - 1];
+assign o_data_3ch_kn1_val = &weight_val_reg[1] & i_data_req_pp[FF_DELAY - 1];
+assign o_data_3ch_kn2_val = &weight_val_reg[2] & i_data_req_pp[FF_DELAY - 1];
+assign o_data_3ch_kn3_val = &weight_val_reg[3] & i_data_req_pp[FF_DELAY - 1];
 
 // Output data
 assign o_data_3ch_kn0 = {weight_kn0_reg[0], weight_kn0_reg[1], weight_kn0_reg[2]}; //, weight_kn0_reg[3]};

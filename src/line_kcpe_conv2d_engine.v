@@ -48,7 +48,7 @@ module line_kcpe_conv2d_engine(
     i_conf_inputrstcnt,
     i_conf_outputsize,
     i_conf_kernelsize,
-    i_cnfx_outputshape,
+    i_conf_outputshape,
     o_done,
     dbg_linekcpe_valid_knx_cnt,
     dbg_linekcpe_psum_line_vld_cnt,
@@ -57,6 +57,12 @@ module line_kcpe_conv2d_engine(
     dbg_linekcpe_weight_line_req_cnt,
     dbg_linekcpe_weight_done_cnt,
     dbg_linekcpe_kernel_done_cnt,
+    // ps_addr,
+    // ps_wren,
+    // ps_wdat,
+    // ps_rden,
+    // ps_rdat,
+    // ps_rvld,
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -113,7 +119,7 @@ input  wire           [REG_WIDTH - 1 : 0] i_conf_inputshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_outputsize;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelsize;
-input  wire  [OUTPUT_SHAPE_WIDTH - 1 : 0] i_cnfx_outputshape;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_outputshape;
 output wire                               o_done;
 
 // Debug
@@ -124,6 +130,13 @@ output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_odata_req_cnt;
 output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_line_req_cnt;
 output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_done_cnt;
 output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_kernel_done_cnt;
+
+// input  wire                               ps_wren;
+// input  wire           [REG_WIDTH - 1 : 0] ps_addr;
+// input  wire           [REG_WIDTH - 1 : 0] ps_wdat;
+// input  wire                               ps_rden;
+// output wire           [REG_WIDTH - 1 : 0] ps_rdat;
+// output wire                               ps_rvld;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -141,7 +154,7 @@ wire                                   buffer_o_data_half;
 wire                                   buffer_o_data_empty;
 
 // Weight signals
-reg                                                 i_weight_req;
+wire                                                i_weight_req;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0]              i_weight_kn0;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0]              i_weight_kn1;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0]              i_weight_kn2;
@@ -206,7 +219,7 @@ assign i_cnfx_numinvalidrow = i_conf_kernelsize[23:20];
 assign i_cnfx_padding       = i_conf_kernelsize[27:24];
 assign i_cnfx_kernelwidth   = i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0];
 assign i_cnfx_inputwidth    = i_conf_inputshape[INPUT_SIZE_WIDTH - 1 : 0];
-assign outputwidth          = i_cnfx_outputshape[7:0];
+assign outputwidth          = i_conf_outputshape[7:0];
 
 always @(posedge clk) begin
     pad_sta <= i_cnfx_padding >> 1;
@@ -275,10 +288,16 @@ assign buffer_o_data_pos[0] = buffer_o_data[IN_INPUT_DAT_WIDTH - 1 : 0];
 assign buffer_o_data_pos[1] = buffer_o_data[IN_INPUT_DAT_WIDTH * 2 - 1 : IN_INPUT_DAT_WIDTH];
 assign buffer_o_data_pos[2] = buffer_o_data[IN_INPUT_DAT_WIDTH * 3 - 1 : IN_INPUT_DAT_WIDTH * 2];
 
-assign engine_i_data_pos0 = (idata_req_per_row_cnt_sta_vld_pp) ?                    0 : buffer_o_data_pos[0];
-assign engine_i_data_pos1 = (idata_req_per_row_cnt_sta_vld_pp) ? buffer_o_data_pos[0] : buffer_o_data_pos[1];
-assign engine_i_data_pos2 = (idata_req_per_row_cnt_sta_vld_pp) ? buffer_o_data_pos[1] : 
-                            (idata_req_per_row_cnt_end_vld_pp) ?                    0 : buffer_o_data_pos[2];
+wire sta_with_pad_vld;
+wire end_with_pad_vld;
+
+assign sta_with_pad_vld = idata_req_per_row_cnt_sta_vld_pp & (pad_sta != 0);
+assign end_with_pad_vld = idata_req_per_row_cnt_end_vld_pp & (pad_end != 0);
+
+assign engine_i_data_pos0 = (sta_with_pad_vld) ?                    0 : buffer_o_data_pos[0];
+assign engine_i_data_pos1 = (sta_with_pad_vld) ? buffer_o_data_pos[0] : buffer_o_data_pos[1];
+assign engine_i_data_pos2 = (sta_with_pad_vld) ? buffer_o_data_pos[1] : 
+                            (end_with_pad_vld) ?                    0 : buffer_o_data_pos[2];
 
 // Weight Buffer
 assign i_weight_kn0 = i_weight[BIT_WIDTH * NUM_CHANNEL - 1 : 0];
@@ -435,8 +454,11 @@ result_router result_router_0(
 wire [3 : 0] valid_row_by_padding;
 assign valid_row_by_padding = (pad_end == 0) ? 0 : (i_cnfx_stride << (pad_end - 1'b1)); // support pad 0, 1, 2 only
 
-assign valid_knx_cnt_max_vld = valid_knx_cnt == (i_cnfx_inputwidth + pad_sta - i_cnfx_numinvalidrow - 1'b1);
-assign invalid_knx_vld = valid_knx_cnt > (outputwidth - 1'b1);
+assign valid_knx_cnt_max_vld = valid_knx_cnt == (i_cnfx_inputwidth - i_cnfx_numinvalidrow - 1'b1);
+//(i_cnfx_inputwidth + pad_sta - i_cnfx_numinvalidrow - 1'b1);
+assign invalid_knx_vld = valid_knx_cnt > (i_cnfx_inputwidth + pad_end - i_cnfx_kernelwidth);
+// (outputwidth - 1'b1);
+//(i_cnfx_inputwidth - i_cnfx_kernelwidth + valid_row_by_padding);
 
 always @(posedge clk) begin
     if (rst) begin
@@ -558,7 +580,9 @@ always @(posedge clk) begin
         add_data_req_num <= 0;
     end
     else begin
-        add_data_req_num <= ((weight_line_done_cnt <= pad_sta) | ((i_cnfx_kernelwidth - weight_line_done_cnt) < pad_end)) ? 
+        add_data_req_num <= (i_cnfx_padding == 0) ? 0 :
+                            ((weight_line_done_cnt <= pad_sta) |
+                            ((i_cnfx_kernelwidth - weight_line_done_cnt) < pad_end)) ? 
                             0 : i_cnfx_inputwidth;
     end
 end
@@ -667,17 +691,12 @@ end
 
 assign o_weight_req = oweight_req_per_row_reg & ~done;
 
+reg idata_end_req_vld_pp;
 always @(posedge clk) begin
-    if (rst) begin
-        i_weight_req <= 0;
-    end
-    if (init) begin
-        i_weight_req <= buffer_o_weight_full;
-    end
-    else begin
-        i_weight_req <= idata_end_req_vld & buffer_o_weight_full;
-    end
+    idata_end_req_vld_pp <= idata_end_req_vld;
 end
+
+assign i_weight_req = (init) ? buffer_o_weight_full : idata_end_req_vld_pp & buffer_o_weight_full;
 
 assign weight_line_done_cnt_max_vld = weight_line_done_cnt == i_cnfx_kernelwidth;
 

@@ -46,7 +46,7 @@ module psum_accum_ctrl(
     i_conf_outputsize,
     i_conf_inputshape,
     i_conf_kernelshape,
-    i_cnfx_outputshape,
+    i_conf_outputshape,
     i_cnfx_stride,
     i_cnfx_padding,
     o_done,
@@ -74,40 +74,40 @@ parameter OUTPUT_SHAPE_WIDTH    = 16;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
-input                       clk;
-input                       rst;
-input   [BIT_WIDTH - 1 : 0] psum_kn0_dat;
-input   [BIT_WIDTH - 1 : 0] psum_kn1_dat;
-input   [BIT_WIDTH - 1 : 0] psum_kn2_dat;
-input   [BIT_WIDTH - 1 : 0] psum_kn3_dat;
-input                       psum_kn0_vld;
-input                       psum_kn1_vld;
-input                       psum_kn2_vld;
-input                       psum_kn3_vld;
-input                       psum_knx_end;
+input                          clk;
+input                          rst;
+input      [BIT_WIDTH - 1 : 0] psum_kn0_dat;
+input      [BIT_WIDTH - 1 : 0] psum_kn1_dat;
+input      [BIT_WIDTH - 1 : 0] psum_kn2_dat;
+input      [BIT_WIDTH - 1 : 0] psum_kn3_dat;
+input                          psum_kn0_vld;
+input                          psum_kn1_vld;
+input                          psum_kn2_vld;
+input                          psum_kn3_vld;
+input                          psum_knx_end;
 
-output [ADDR_WIDTH - 1 : 0] memctrl0_wadd;
-output                      memctrl0_wren;
-output [DATA_WIDTH - 1 : 0] memctrl0_idat;
-output [ADDR_WIDTH - 1 : 0] memctrl0_radd;
-output                      memctrl0_rden;
-input  [DATA_WIDTH - 1 : 0] memctrl0_odat;
-input                       memctrl0_ovld;
+output    [ADDR_WIDTH - 1 : 0] memctrl0_wadd;
+output                         memctrl0_wren;
+output    [DATA_WIDTH - 1 : 0] memctrl0_idat;
+output    [ADDR_WIDTH - 1 : 0] memctrl0_radd;
+output                         memctrl0_rden;
+input     [DATA_WIDTH - 1 : 0] memctrl0_odat;
+input                          memctrl0_ovld;
 
-input          [REG_WIDTH - 1 : 0] i_conf_ctrl;
-input          [REG_WIDTH - 1 : 0] i_conf_weightinterval;
-input          [REG_WIDTH - 1 : 0] i_conf_outputsize;
-input          [REG_WIDTH - 1 : 0] i_conf_inputshape;
-input          [REG_WIDTH - 1 : 0] i_conf_kernelshape;
-input [OUTPUT_SHAPE_WIDTH - 1 : 0] i_cnfx_outputshape;
-input       [STRIDE_WIDTH - 1 : 0] i_cnfx_stride;
-input      [PADDING_WIDTH - 1 : 0] i_cnfx_padding;
-output                             o_done;
+input      [REG_WIDTH - 1 : 0] i_conf_ctrl;
+input      [REG_WIDTH - 1 : 0] i_conf_weightinterval;
+input      [REG_WIDTH - 1 : 0] i_conf_outputsize;
+input      [REG_WIDTH - 1 : 0] i_conf_inputshape;
+input      [REG_WIDTH - 1 : 0] i_conf_kernelshape;
+input      [REG_WIDTH - 1 : 0] i_conf_outputshape;
+input   [STRIDE_WIDTH - 1 : 0] i_cnfx_stride;
+input  [PADDING_WIDTH - 1 : 0] i_cnfx_padding;
+output                         o_done;
 
-output  [REG_WIDTH - 1 : 0] dbg_psumacc_base_addr;
-output  [REG_WIDTH - 1 : 0] dbg_psumacc_psum_out_cnt;
-output  [REG_WIDTH - 1 : 0] dbg_psumacc_rd_addr;
-output  [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
+output     [REG_WIDTH - 1 : 0] dbg_psumacc_base_addr;
+output     [REG_WIDTH - 1 : 0] dbg_psumacc_psum_out_cnt;
+output     [REG_WIDTH - 1 : 0] dbg_psumacc_rd_addr;
+output     [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -131,8 +131,8 @@ reg                      con_enb_vld;
 reg                      con_enb_vld_pp;
 reg                      psum_zero_enb;
 
-reg     [PADDING_WIDTH - 1 : 0] pad_sta;
-reg     [PADDING_WIDTH - 1 : 0] pad_end;
+reg [PADDING_WIDTH - 1 : 0] pad_sta;
+reg [PADDING_WIDTH - 1 : 0] pad_end;
 
 wire [7:0]                output_width;
 wire [ADDR_WIDTH - 1 : 0] pad_sta_addr;
@@ -162,7 +162,7 @@ end
 
 wire [3 : 0] pad_sta_row;
 wire [3 : 0] pad_row;
-assign output_width = i_cnfx_outputshape[7:0];
+assign output_width = i_conf_outputshape[7:0];
 assign pad_sta_row  = pad_sta - i_cnfx_stride + 1'b1;
 assign pad_sta_addr = (pad_sta_row == 4'd0) ? 0:
                       (pad_sta_row == 4'd1) ? output_width :
