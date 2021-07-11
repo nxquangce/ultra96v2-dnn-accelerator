@@ -10,7 +10,7 @@ import torch
 
 import time
 
-overlay_name = "zynqmpsoc_conv_dbg_20210707_2324"
+overlay_name = "zynqmpsoc_conv_dbg_20210708_2319"
 
 print("=== Config hardware ===")
 print(overlay_name)
@@ -247,14 +247,16 @@ def main():
     print("==== Perform PL Conv ====")
     input_shape = [224, 224, 3]
     weight_shape = [8, 3, 3, 3]
-    stride = 1
-    padding = 2
+    stride = 2
+    padding = 1
     
     output_width = (input_shape[0] - weight_shape[1] + padding) // stride + 1
     output_shape = [output_width, output_width, weight_shape[0]]
     
-    inputrstcnt = (output_width - padding//2) * input_shape[0] - 1
+    minrow = 0 if (padding == 0) else 1
+    inputrstcnt = (output_width - minrow) * input_shape[0] - 1
     num_invalid_row = input_shape[0] + padding - output_width * stride - 1
+    num_invalid_row = 1
 
     outputsize = output_width * output_width - 1
     conf_addr3 = (padding << (6*4)) + (num_invalid_row << (5*4)) + (stride << (4*4)) + weight_shape[1]**2
