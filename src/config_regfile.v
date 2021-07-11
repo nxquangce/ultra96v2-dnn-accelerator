@@ -40,20 +40,11 @@ module config_regfile #
     output [C_S_AXI_DATA_WIDTH - 1 : 0] reg4,
     output [C_S_AXI_DATA_WIDTH - 1 : 0] reg5,
     output [C_S_AXI_DATA_WIDTH - 1 : 0] reg6,
+    output [C_S_AXI_DATA_WIDTH - 1 : 0] reg7,
+    output [C_S_AXI_DATA_WIDTH - 1 : 0] reg8,
+    output [C_S_AXI_DATA_WIDTH - 1 : 0] reg9,
     input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg0,
     input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg1,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg2,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg3,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg4,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg5,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg6,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg7,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg8,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg9,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg10,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg11,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg12,
-    input  [C_S_AXI_DATA_WIDTH - 1 : 0] ireg13,
 
     // User ports ends
     // Do not modify the ports beyond this line
@@ -150,6 +141,9 @@ reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg3;
 reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg4;
 reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg5;
 reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg6;
+reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg7;
+reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg8;
+reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg9;
 wire	 slv_reg_rden;
 wire	 slv_reg_wren;
 reg [C_S_AXI_DATA_WIDTH-1:0]	 reg_data_out;
@@ -269,6 +263,9 @@ begin
         slv_reg4 <= 0;
         slv_reg5 <= 0;
         slv_reg6 <= 0;
+        slv_reg7 <= 0;
+        slv_reg8 <= 0;
+        slv_reg9 <= 0;
     end
     else begin
     if (slv_reg_wren)
@@ -323,6 +320,27 @@ begin
                 // Slave register 3
                 slv_reg6[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
                 end
+            5'h7:
+            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+                if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+                // Respective byte enables are asserted as per write strobes
+                // Slave register 3
+                slv_reg7[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+                end
+            5'h8:
+            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+                if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+                // Respective byte enables are asserted as per write strobes
+                // Slave register 3
+                slv_reg8[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+                end
+            5'h8:
+            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+                if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+                // Respective byte enables are asserted as per write strobes
+                // Slave register 3
+                slv_reg9[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+                end
             default : begin
                         slv_reg0 <= slv_reg0;
                         slv_reg1 <= slv_reg1;
@@ -331,6 +349,9 @@ begin
                         slv_reg4 <= slv_reg4;
                         slv_reg5 <= slv_reg5;
                         slv_reg6 <= slv_reg6;
+                        slv_reg7 <= slv_reg7;
+                        slv_reg8 <= slv_reg8;
+                        slv_reg9 <= slv_reg9;
                     end
         endcase
         end
@@ -446,20 +467,11 @@ begin
         5'h04  : reg_data_out <= slv_reg4;
         5'h05  : reg_data_out <= slv_reg5;
         5'h06  : reg_data_out <= slv_reg6;
-        5'h07  : reg_data_out <= ireg0;
-        5'h08  : reg_data_out <= ireg1;
-        5'h09  : reg_data_out <= ireg2;
-        5'h0a  : reg_data_out <= ireg3;
-        5'h0b  : reg_data_out <= ireg4;
-        5'h0c  : reg_data_out <= ireg5;
-        5'h0d  : reg_data_out <= ireg6;
-        5'h0e  : reg_data_out <= ireg7;
-        5'h0f  : reg_data_out <= ireg8;
-        5'h10  : reg_data_out <= ireg9;
-        5'h11  : reg_data_out <= ireg10;
-        5'h12  : reg_data_out <= ireg11;
-        5'h13  : reg_data_out <= ireg12;
-        5'h14  : reg_data_out <= ireg13;
+        5'h07  : reg_data_out <= slv_reg7;
+        5'h08  : reg_data_out <= slv_reg8;
+        5'h09  : reg_data_out <= slv_reg9;
+        5'h0a  : reg_data_out <= ireg0;
+        5'h0b  : reg_data_out <= ireg1;
 
         default : reg_data_out <= 0;
         endcase
@@ -492,6 +504,9 @@ assign reg3 = slv_reg3;
 assign reg4 = slv_reg4;
 assign reg5 = slv_reg5;
 assign reg6 = slv_reg6;
+assign reg7 = slv_reg7;
+assign reg8 = slv_reg8;
+assign reg9 = slv_reg9;
 
 // User logic ends
 

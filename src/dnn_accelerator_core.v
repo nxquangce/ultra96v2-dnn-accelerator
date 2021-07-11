@@ -149,27 +149,17 @@ module dnn_accelerator_core(
     // S_AXI_RVALID,
     // S_AXI_RREADY,
     i_conf_ctrl,
-    i_conf_outputsize,
-    i_conf_kernelsize,
-    i_conf_weightinterval,
-    i_conf_kernelshape,
     i_conf_inputshape,
+    i_conf_kernelshape,
+    i_conf_kernelsize,
+    i_conf_outputshape,
+    i_conf_outputsize,
+    i_conf_weightinterval,
     i_conf_inputrstcnt,
+    i_conf_addr,
+    i_conf_data,
     o_conf_status,
-    dbg_linekcpe_valid_knx_cnt,
-    dbg_linekcpe_psum_line_vld_cnt,
-    dbg_linekcpe_idata_req_cnt,
-    dbg_linekcpe_odata_req_cnt,
-    dbg_linekcpe_weight_line_req_cnt,
-    dbg_linekcpe_weight_done_cnt,
-    dbg_linekcpe_kernel_done_cnt,
-    dbg_psumacc_base_addr,
-    dbg_psumacc_psum_out_cnt,
-    dbg_psumacc_wr_addr,
-    dbg_psumacc_rd_addr,
-    dbg_datareq_knlinex_cnt,
-    dbg_datareq_addr_reg,
-
+    dbg_reg_data,
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -308,6 +298,19 @@ output                      mem_rst_12;
 
 `endif
 
+input   [REG_WIDTH - 1 : 0] i_conf_ctrl;
+input   [REG_WIDTH - 1 : 0] i_conf_inputshape;
+input   [REG_WIDTH - 1 : 0] i_conf_kernelshape;
+input   [REG_WIDTH - 1 : 0] i_conf_kernelsize;
+input   [REG_WIDTH - 1 : 0] i_conf_outputshape;
+input   [REG_WIDTH - 1 : 0] i_conf_outputsize;
+input   [REG_WIDTH - 1 : 0] i_conf_weightinterval;
+input   [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
+input   [REG_WIDTH - 1 : 0] i_conf_addr;
+input   [REG_WIDTH - 1 : 0] i_conf_data;
+output  [REG_WIDTH - 1 : 0] o_conf_status;
+output  [REG_WIDTH - 1 : 0] dbg_reg_data;
+
 // Config regfile AXI
 //input  wire                                S_AXI_ACLK;
 //input  wire                                S_AXI_ARESETN;
@@ -341,6 +344,7 @@ wire [IN_INPUT_DAT_WIDTH  - 1 : 0] core_i_data;
 wire [IN_WEIGHT_DAT_WIDTH - 1 : 0] core_i_weight;
 wire                               core_i_data_vld;
 wire                               core_i_weight_vld;
+
 wire          [ADDR_WIDTH - 1 : 0] core_memctrl0_wadd;
 wire                               core_memctrl0_wren;
 wire          [DATA_WIDTH - 1 : 0] core_memctrl0_idat;
@@ -349,29 +353,12 @@ wire                               core_memctrl0_rden;
 wire          [DATA_WIDTH - 1 : 0] core_memctrl0_odat;
 wire                               core_memctrl0_ovld;
 
-input [REG_WIDTH - 1 : 0] i_conf_ctrl;
-input [REG_WIDTH - 1 : 0] i_conf_outputsize;
-input [REG_WIDTH - 1 : 0] i_conf_kernelsize;
-input [REG_WIDTH - 1 : 0] i_conf_weightinterval;
-input [REG_WIDTH - 1 : 0] i_conf_kernelshape;
-input [REG_WIDTH - 1 : 0] i_conf_inputshape;
-input [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
-output [REG_WIDTH - 1 : 0] o_conf_status;
-
-output [REG_WIDTH - 1 : 0] dbg_linekcpe_valid_knx_cnt;
-output [REG_WIDTH - 1 : 0] dbg_linekcpe_psum_line_vld_cnt;
-output [REG_WIDTH - 1 : 0] dbg_linekcpe_idata_req_cnt;
-output [REG_WIDTH - 1 : 0] dbg_linekcpe_odata_req_cnt;
-output [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_line_req_cnt;
-output [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_done_cnt;
-output [REG_WIDTH - 1 : 0] dbg_linekcpe_kernel_done_cnt;
-output [REG_WIDTH - 1 : 0] dbg_psumacc_base_addr;
-output [REG_WIDTH - 1 : 0] dbg_psumacc_psum_out_cnt;
-output [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
-output [REG_WIDTH - 1 : 0] dbg_psumacc_rd_addr;
-
-output [REG_WIDTH - 1 : 0] dbg_datareq_knlinex_cnt;
-output [REG_WIDTH - 1 : 0] dbg_datareq_addr_reg;
+wire           [REG_WIDTH - 1 : 0] core_ps_addr;
+wire                               core_ps_wren;
+wire           [REG_WIDTH - 1 : 0] core_ps_wdat;
+wire                               core_ps_rden;
+wire           [REG_WIDTH - 1 : 0] core_ps_rdat;
+wire                               core_ps_rvld;
 
 
 // Core
@@ -380,41 +367,37 @@ accelerator_core
     .OUTPUT_MEM_DELAY       (OUTPUT_MEM_DELAY + 1)
     )
 accelerator_core_inst(
-    .clk                    (clk),
-    .rst                    (rst),
-    .o_data_req             (core_o_data_req),
-    .o_data_end             (core_o_data_end),
-    .i_data                 (core_i_data),
-    .i_data_vld             (core_i_data_vld),
-    .o_weight_req           (core_o_weight_req),
-    .i_weight               (core_i_weight),
-    .i_weight_vld           (core_i_weight_vld),
-    .memctrl0_wadd          (core_memctrl0_wadd),
-    .memctrl0_wren          (core_memctrl0_wren),
-    .memctrl0_idat          (core_memctrl0_idat),
-    .memctrl0_radd          (core_memctrl0_radd),
-    .memctrl0_rden          (core_memctrl0_rden),
-    .memctrl0_odat          (core_memctrl0_odat),
-    .memctrl0_ovld          (core_memctrl0_ovld),
-    .i_conf_ctrl            (i_conf_ctrl),
-    .i_conf_outputsize      (i_conf_outputsize),
-    .i_conf_kernelsize      (i_conf_kernelsize),
-    .i_conf_weightinterval  (i_conf_weightinterval),
-    .i_conf_kernelshape     (i_conf_kernelshape),
-    .i_conf_inputshape      (i_conf_inputshape),
-    .i_conf_inputrstcnt     (i_conf_inputrstcnt),
-    .o_conf_status          (o_conf_status),
-    .dbg_linekcpe_valid_knx_cnt         (dbg_linekcpe_valid_knx_cnt),
-    .dbg_linekcpe_psum_line_vld_cnt     (dbg_linekcpe_psum_line_vld_cnt),
-    .dbg_linekcpe_idata_req_cnt         (dbg_linekcpe_idata_req_cnt),
-    .dbg_linekcpe_odata_req_cnt         (dbg_linekcpe_odata_req_cnt),
-    .dbg_linekcpe_weight_line_req_cnt   (dbg_linekcpe_weight_line_req_cnt),
-    .dbg_linekcpe_weight_done_cnt       (dbg_linekcpe_weight_done_cnt),
-    .dbg_linekcpe_kernel_done_cnt       (dbg_linekcpe_kernel_done_cnt),
-    .dbg_psumacc_base_addr              (dbg_psumacc_base_addr),
-    .dbg_psumacc_psum_out_cnt           (dbg_psumacc_psum_out_cnt),
-    .dbg_psumacc_rd_addr                (dbg_psumacc_rd_addr),
-    .dbg_psumacc_wr_addr                (dbg_psumacc_wr_addr)
+    .clk                                (clk),
+    .rst                                (rst),
+    .o_data_req                         (core_o_data_req),
+    .o_data_end                         (core_o_data_end),
+    .i_data                             (core_i_data),
+    .i_data_vld                         (core_i_data_vld),
+    .o_weight_req                       (core_o_weight_req),
+    .i_weight                           (core_i_weight),
+    .i_weight_vld                       (core_i_weight_vld),
+    .memctrl0_wadd                      (core_memctrl0_wadd),
+    .memctrl0_wren                      (core_memctrl0_wren),
+    .memctrl0_idat                      (core_memctrl0_idat),
+    .memctrl0_radd                      (core_memctrl0_radd),
+    .memctrl0_rden                      (core_memctrl0_rden),
+    .memctrl0_odat                      (core_memctrl0_odat),
+    .memctrl0_ovld                      (core_memctrl0_ovld),
+    .i_conf_ctrl                        (i_conf_ctrl),
+    .i_conf_outputsize                  (i_conf_outputsize),
+    .i_conf_kernelsize                  (i_conf_kernelsize),
+    .i_conf_weightinterval              (i_conf_weightinterval),
+    .i_conf_kernelshape                 (i_conf_kernelshape),
+    .i_conf_inputshape                  (i_conf_inputshape),
+    .i_conf_inputrstcnt                 (i_conf_inputrstcnt),
+    .i_conf_outputshape                 (i_conf_outputshape),
+    .o_conf_status                      (o_conf_status),
+    .ps_addr                            (core_ps_addr),
+    .ps_wren                            (core_ps_wren),
+    .ps_wdat                            (core_ps_wdat),
+    .ps_rden                            (core_ps_rden),
+    .ps_rdat                            (core_ps_rdat),
+    .ps_rvld                            (core_ps_rvld)
     );
 
 // Data request
@@ -424,8 +407,10 @@ wire                      pixelconcat_ostall;
 wire [ADDR_WIDTH - 1 : 0] datareq_o_addr;
 wire                      datareq_o_rden;
 wire                [3:0] i_cnfx_stride;
+wire                [3:0] i_cnfx_padding;
 
-assign i_cnfx_stride = i_conf_kernelsize[18:16];
+assign i_cnfx_stride = i_conf_kernelsize[19:16];
+assign i_cnfx_padding = i_conf_kernelsize[27:24];
 
 data_req data_req_inst(
     .clk                    (clk),
@@ -436,10 +421,11 @@ data_req data_req_inst(
     .o_addr                 (datareq_o_addr),
     .o_rden                 (datareq_o_rden),
     .i_cnfx_stride          (i_cnfx_stride),
+    .i_cnfx_padding         (i_cnfx_padding),
     .i_conf_inputshape      (i_conf_inputshape),
     .i_conf_kernelshape     (i_conf_kernelshape),
-    .dbg_datareq_knlinex_cnt(dbg_datareq_knlinex_cnt),
-    .dbg_datareq_addr_reg   (dbg_datareq_addr_reg)
+    .dbg_datareq_knlinex_cnt(datareq_knlinex_cnt),
+    .dbg_datareq_addr_reg   (datareq_addr_reg)
     );
 
 pixel_concat pixel_concat_inst(
@@ -847,6 +833,39 @@ psum_bram_ctrl_inst_7(
     );
 
 `endif
+////////////////////////////////////////////////////////////////////
+// Debug
+wire [REG_WIDTH - 1 : 0] ps_addr;
+wire                     ps_wren;
+wire [REG_WIDTH - 1 : 0] ps_wdat;
+wire                     ps_rden;
+wire [REG_WIDTH - 1 : 0] ps_rdat;
+wire                     ps_rvld;
+
+wire [REG_WIDTH - 1 : 0] dbg_cnt_register_rdat;
+wire                     dbg_cnt_register_rvld;
+
+assign ps_rdat = dbg_cnt_register_rdat | core_ps_rdat;
+assign ps_rvld = dbg_cnt_register_rvld | core_ps_rvld;
+
+reg_access_ps_gen ps_dbg(
+    .clk        (clk),
+    .rst        (rst),
+    .host_addr  (i_conf_addr),
+    .host_idat  (i_conf_data),
+    .host_odat  (dbg_reg_data),
+    .user_addr  (ps_addr),
+    .user_wren  (ps_wren),
+    .user_wdat  (ps_wdat),
+    .user_rden  (ps_rden),
+    .user_rdat  (ps_rdat),
+    .user_rvld  (ps_rvld)
+    );
+
+assign core_ps_addr = ps_addr;
+assign core_ps_wren = ps_wren;
+assign core_ps_wdat = ps_wdat;
+assign core_ps_rden = ps_rden;
 
 // Config registers
 // config_regfile #

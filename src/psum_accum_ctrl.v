@@ -44,37 +44,17 @@ module psum_accum_ctrl(
     i_conf_ctrl,
     i_conf_weightinterval,
     i_conf_outputsize,
+    i_conf_inputshape,
     i_conf_kernelshape,
+    i_conf_outputshape,
+    i_cnfx_stride,
+    i_cnfx_padding,
     o_done,
 
     dbg_psumacc_base_addr,
     dbg_psumacc_psum_out_cnt,
     dbg_psumacc_rd_addr,
     dbg_psumacc_wr_addr,
-
-    // memctrl1_wadd,
-    // memctrl1_wren,
-    // memctrl1_idat,
-    // memctrl1_radd,
-    // memctrl1_rden,
-    // memctrl1_odat,
-    // memctrl1_ovld,
-
-    // memctrl2_wadd,
-    // memctrl2_wren,
-    // memctrl2_idat,
-    // memctrl2_radd,
-    // memctrl2_rden,
-    // memctrl2_odat,
-    // memctrl2_ovld,
-
-    // memctrl3_wadd,
-    // memctrl3_wren,
-    // memctrl3_idat,
-    // memctrl3_radd,
-    // memctrl3_rden,
-    // memctrl3_odat,
-    // memctrl3_ovld
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -88,63 +68,46 @@ parameter MEM_DELAY     = 1;
 
 parameter NUM_KERNEL    = 4;
 
+parameter STRIDE_WIDTH          = 4;
+parameter PADDING_WIDTH         = 4;
+parameter OUTPUT_SHAPE_WIDTH    = 16;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
-input                       clk;
-input                       rst;
-input   [BIT_WIDTH - 1 : 0] psum_kn0_dat;
-input   [BIT_WIDTH - 1 : 0] psum_kn1_dat;
-input   [BIT_WIDTH - 1 : 0] psum_kn2_dat;
-input   [BIT_WIDTH - 1 : 0] psum_kn3_dat;
-input                       psum_kn0_vld;
-input                       psum_kn1_vld;
-input                       psum_kn2_vld;
-input                       psum_kn3_vld;
-input                       psum_knx_end;
+input                          clk;
+input                          rst;
+input      [BIT_WIDTH - 1 : 0] psum_kn0_dat;
+input      [BIT_WIDTH - 1 : 0] psum_kn1_dat;
+input      [BIT_WIDTH - 1 : 0] psum_kn2_dat;
+input      [BIT_WIDTH - 1 : 0] psum_kn3_dat;
+input                          psum_kn0_vld;
+input                          psum_kn1_vld;
+input                          psum_kn2_vld;
+input                          psum_kn3_vld;
+input                          psum_knx_end;
 
-output [ADDR_WIDTH - 1 : 0] memctrl0_wadd;
-output                      memctrl0_wren;
-output [DATA_WIDTH - 1 : 0] memctrl0_idat;
-output [ADDR_WIDTH - 1 : 0] memctrl0_radd;
-output                      memctrl0_rden;
-input  [DATA_WIDTH - 1 : 0] memctrl0_odat;
-input                       memctrl0_ovld;
+output    [ADDR_WIDTH - 1 : 0] memctrl0_wadd;
+output                         memctrl0_wren;
+output    [DATA_WIDTH - 1 : 0] memctrl0_idat;
+output    [ADDR_WIDTH - 1 : 0] memctrl0_radd;
+output                         memctrl0_rden;
+input     [DATA_WIDTH - 1 : 0] memctrl0_odat;
+input                          memctrl0_ovld;
 
-input   [REG_WIDTH - 1 : 0] i_conf_ctrl;
-input   [REG_WIDTH - 1 : 0] i_conf_weightinterval;
-input   [REG_WIDTH - 1 : 0] i_conf_outputsize;
-input   [REG_WIDTH - 1 : 0] i_conf_kernelshape;
-output                      o_done;
+input      [REG_WIDTH - 1 : 0] i_conf_ctrl;
+input      [REG_WIDTH - 1 : 0] i_conf_weightinterval;
+input      [REG_WIDTH - 1 : 0] i_conf_outputsize;
+input      [REG_WIDTH - 1 : 0] i_conf_inputshape;
+input      [REG_WIDTH - 1 : 0] i_conf_kernelshape;
+input      [REG_WIDTH - 1 : 0] i_conf_outputshape;
+input   [STRIDE_WIDTH - 1 : 0] i_cnfx_stride;
+input  [PADDING_WIDTH - 1 : 0] i_cnfx_padding;
+output                         o_done;
 
-output  [REG_WIDTH - 1 : 0] dbg_psumacc_base_addr;
-output  [REG_WIDTH - 1 : 0] dbg_psumacc_psum_out_cnt;
-output  [REG_WIDTH - 1 : 0] dbg_psumacc_rd_addr;
-output  [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
-
-// output [ADDR_WIDTH - 1 : 0] memctrl1_wadd;
-// output                      memctrl1_wren;
-// output [DATA_WIDTH - 1 : 0] memctrl1_idat;
-// output [ADDR_WIDTH - 1 : 0] memctrl1_radd;
-// output                      memctrl1_rden;
-// input  [DATA_WIDTH - 1 : 0] memctrl1_odat;
-// input                       memctrl1_ovld;
-
-// output [ADDR_WIDTH - 1 : 0] memctrl2_wadd;
-// output                      memctrl2_wren;
-// output [DATA_WIDTH - 1 : 0] memctrl2_idat;
-// output [ADDR_WIDTH - 1 : 0] memctrl2_radd;
-// output                      memctrl2_rden;
-// input  [DATA_WIDTH - 1 : 0] memctrl2_odat;
-// input                       memctrl2_ovld;
-
-// output [ADDR_WIDTH - 1 : 0] memctrl3_wadd;
-// output                      memctrl3_wren;
-// output [DATA_WIDTH - 1 : 0] memctrl3_idat;
-// output [ADDR_WIDTH - 1 : 0] memctrl3_radd;
-// output                      memctrl3_rden;
-// input  [DATA_WIDTH - 1 : 0] memctrl3_odat;
-// input                       memctrl3_ovld;
-
+output     [REG_WIDTH - 1 : 0] dbg_psumacc_base_addr;
+output     [REG_WIDTH - 1 : 0] dbg_psumacc_psum_out_cnt;
+output     [REG_WIDTH - 1 : 0] dbg_psumacc_rd_addr;
+output     [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -168,14 +131,54 @@ reg                      con_enb_vld;
 reg                      con_enb_vld_pp;
 reg                      psum_zero_enb;
 
+reg [PADDING_WIDTH - 1 : 0] pad_sta;
+reg [PADDING_WIDTH - 1 : 0] pad_end;
+
+wire [7:0]                output_width;
+wire [ADDR_WIDTH - 1 : 0] pad_sta_addr;
+
+// Status
+reg                     init;
+reg                     done;
+reg [REG_WIDTH - 1 : 0] kernel_done_cnt;
+reg [REG_WIDTH - 1 : 0] kernel_done_cnt_max_reg;
+wire                    kernel_done_cnt_max_vld;
+wire                    done_vld;
+
+reg [MEM_DELAY - 1 : 0] psum_knx_end_pp;
+wire                    psum_knx_end_pp_vld;
+
+
 // Detect rising edge of continue enable conf
 always @(posedge clk) begin
     con_enb_vld <= ~con_enb_cache & con_enb;
     con_enb_vld_pp <= con_enb_vld;
 end
 
-assign psum_out_cnt_max_vld = (psum_out_cnt == i_conf_weightinterval);
-assign psum_out_cnt_premax_vld = (psum_out_cnt == (i_conf_weightinterval - 1'b1)) & psum_kn0_vld;
+always @(posedge clk) begin
+    pad_sta = i_cnfx_padding >> 1;
+    pad_end = i_cnfx_padding - (i_cnfx_padding >> 1);
+end
+
+wire [3 : 0] pad_sta_row;
+wire [3 : 0] pad_row;
+assign output_width = i_conf_outputshape[7:0];
+assign pad_sta_row  = pad_sta - i_cnfx_stride + 1'b1;
+assign pad_sta_addr = (pad_sta_row == 4'd0) ? 0:
+                      (pad_sta_row == 4'd1) ? output_width :
+                      (pad_sta_row == 4'd2) ? output_width << 1 : 0;
+
+wire [REG_WIDTH - 1 : 0] psum_out_cnt_max;
+wire [REG_WIDTH - 1 : 0] num_skip_interval;
+assign num_skip_interval = (i_cnfx_padding == 4'd0) ? 0 :
+                           (i_cnfx_padding == 4'd1) ? output_width :
+                           (i_cnfx_padding == 4'd2) ? output_width << 1:
+                           (i_cnfx_padding == 4'd3) ? output_width << 1 + output_width :
+                           (i_cnfx_padding == 4'd4) ? output_width << 2 : 0;
+
+assign psum_out_cnt_max = i_conf_weightinterval - num_skip_interval;
+assign psum_out_cnt_max_vld = (psum_out_cnt == psum_out_cnt_max);
+assign psum_out_cnt_premax_vld = (psum_out_cnt == (psum_out_cnt_max - 1'b1)) & psum_kn0_vld;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -195,8 +198,14 @@ always @(posedge clk) begin
     end
 end
 
+wire output_end_vld;
+assign output_end_vld = psum_out_cnt_max_vld & psum_kn0_vld;
+
 always @(posedge clk) begin
-    if (rst | psum_knx_end | con_enb_vld_pp) begin
+    if (rst | output_end_vld) begin
+        rd_addr <= base_addr + pad_sta_addr;
+    end
+    else if(psum_knx_end | con_enb_vld_pp) begin
         rd_addr <= base_addr;
     end
     else if (psum_kn0_vld) begin
@@ -218,16 +227,8 @@ always @(posedge clk) begin
 end
 
 assign memctrl0_rden = psum_kn0_vld;
-
 assign memctrl0_radd = rd_addr;
-// assign memctrl1_radd = rd_addr;
-// assign memctrl2_radd = rd_addr;
-// assign memctrl3_radd = rd_addr;
-
 assign memctrl0_wadd = wr_addr;
-// assign memctrl1_radd = wr_addr;
-// assign memctrl2_radd = wr_addr;
-// assign memctrl3_radd = wr_addr;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -285,26 +286,9 @@ always @(posedge clk) begin
 end
 
 assign memctrl0_idat = {wdat_cache[3], wdat_cache[2], wdat_cache[1], wdat_cache[0]};
-// assign memctrl1_idat = wdat_cache[1];
-// assign memctrl2_idat = wdat_cache[2];
-// assign memctrl3_idat = wdat_cache[3];
-
 assign memctrl0_wren = wr_enab;
-// assign memctrl1_wren = wr_enab;
-// assign memctrl2_wren = wr_enab;
-// assign memctrl3_wren = wr_enab;
 
 // Status
-reg                     init;
-reg                     done;
-reg [REG_WIDTH - 1 : 0] kernel_done_cnt;
-reg [REG_WIDTH - 1 : 0] kernel_done_cnt_max_reg;
-wire                    kernel_done_cnt_max_vld;
-wire                    done_vld;
-
-reg [MEM_DELAY - 1 : 0] psum_knx_end_pp;
-wire                    psum_knx_end_pp_vld;
-
 always @(posedge clk) begin
     con_enb <= i_conf_ctrl[4];
     con_enb_cache <= con_enb;
