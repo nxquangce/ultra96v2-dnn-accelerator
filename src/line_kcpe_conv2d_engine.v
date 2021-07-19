@@ -506,11 +506,11 @@ always @(posedge clk) begin
 end
 
 // Psum control
-wire [3 : 0]             sub_line_psum_vld_num;
-wire [REG_WIDTH - 1 : 0] sub_psum_vld_num;
-reg  [REG_WIDTH - 1 : 0] psum_line_vld_cnt_max;
-reg  [3 : 0]             psum_weight_row_cnt;
-reg                      psum_init;
+reg [3 : 0]             sub_line_psum_vld_num;
+reg [REG_WIDTH - 1 : 0] sub_psum_vld_num;
+reg [REG_WIDTH - 1 : 0] psum_line_vld_cnt_max;
+reg [3 : 0]             psum_weight_row_cnt;
+reg                     psum_init;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -530,14 +530,29 @@ always @(posedge clk) begin
     end
 end
 
-wire [3 : 0] psum_padend_cnd_num;
-assign psum_padend_cnd_num = i_cnfx_kernelwidth - psum_weight_row_cnt - 1'b1;
+reg [3 : 0] psum_padend_cnd_num;
+reg [REG_WIDTH - 1 : 0] outputwidthx2;
+reg [REG_WIDTH - 1 : 0] outputwidthx3;
 
-assign sub_line_psum_vld_num = (psum_weight_row_cnt < pad_sta) ? pad_sta - psum_weight_row_cnt :
-                               (psum_padend_cnd_num < pad_end) ? pad_end - psum_padend_cnd_num : 0;
-assign sub_psum_vld_num = (sub_line_psum_vld_num == 4'd1) ? outputwidth :
-                          (sub_line_psum_vld_num == 4'd2) ? outputwidth << 1 :
-                          (sub_line_psum_vld_num == 4'd3) ? outputwidth << 1 + outputwidth : 0;
+// fox timing
+always @(posedge clk) begin
+    outputwidthx2 <= outputwidth << 1;
+    outputwidthx3 <= (outputwidth << 1) + outputwidth;
+end
+
+// fix timing
+always @(posedge clk) begin
+    psum_padend_cnd_num   <= i_cnfx_kernelwidth - psum_weight_row_cnt - 1'b1;
+    sub_line_psum_vld_num <= (psum_weight_row_cnt < pad_sta) ? pad_sta - psum_weight_row_cnt :
+                             (psum_padend_cnd_num < pad_end) ? pad_end - psum_padend_cnd_num : 0;
+end
+
+// fix timing
+always @(posedge clk) begin
+    sub_psum_vld_num <= (sub_line_psum_vld_num == 4'd1) ? outputwidth :
+                        (sub_line_psum_vld_num == 4'd2) ? outputwidthx2 :
+                        (sub_line_psum_vld_num == 4'd3) ? outputwidthx3 : 0;
+end
 
 always @(posedge clk) begin
     if (rst) begin

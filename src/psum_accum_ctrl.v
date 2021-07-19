@@ -169,12 +169,16 @@ assign pad_sta_addr = (pad_sta_row == 4'd0) ? 0:
                       (pad_sta_row == 4'd2) ? output_width << 1 : 0;
 
 wire [REG_WIDTH - 1 : 0] psum_out_cnt_max;
-wire [REG_WIDTH - 1 : 0] num_skip_interval;
-assign num_skip_interval = (i_cnfx_padding == 4'd0) ? 0 :
-                           (i_cnfx_padding == 4'd1) ? output_width :
-                           (i_cnfx_padding == 4'd2) ? output_width << 1:
-                           (i_cnfx_padding == 4'd3) ? output_width << 1 + output_width :
-                           (i_cnfx_padding == 4'd4) ? output_width << 2 : 0;
+reg  [REG_WIDTH - 1 : 0] num_skip_interval;
+
+// fix timing
+always @(posedge clk) begin
+    num_skip_interval <= (i_cnfx_padding == 4'd0) ? 0 :
+                         (i_cnfx_padding == 4'd1) ? output_width :
+                         (i_cnfx_padding == 4'd2) ? output_width << 1:
+                         (i_cnfx_padding == 4'd3) ? output_width << 1 + output_width :
+                         (i_cnfx_padding == 4'd4) ? output_width << 2 : 0;
+end
 
 assign psum_out_cnt_max = i_conf_weightinterval - num_skip_interval;
 assign psum_out_cnt_max_vld = (psum_out_cnt == psum_out_cnt_max);
