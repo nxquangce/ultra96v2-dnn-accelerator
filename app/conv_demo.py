@@ -8,10 +8,18 @@ import tflite_runtime.interpreter as tflite
 import torch
 import time
 
-overlay_name = "zynqmpsoc_conv_dbg_20210708_2319"
+overlay_name = "zynqmpsoc_conv_dbg_20210731_1222"
+app_version = "dev.582a3ccb.1"
 
-print("=== Config hardware ===")
-print(overlay_name)
+print("+---------------------------------------+")
+print("| Welcome to hardware accelerator demo. |")
+print("+---------------------------------------+")
+print("|    App version   : " + app_version + "     |")
+print("|    Driver version: " + driver.version + "     |")
+print("+---------------------------------------+")
+print()
+print("Config hardware...")
+print("Harware version: " + overlay_name)
 print()
 
 overlay = Overlay('./overlay/dnn/' +  overlay_name + '.bit')
@@ -48,8 +56,9 @@ def t_conv2d(t_input_data, t_weight_data, stride, pad):
     padding = 0
     if (pad > 0):
         padding = 1
-    print("Perform PS Conv...")
+    print("Perform PS Conv...", end="")
     t_output = torch.nn.functional.conv2d(t_input_data, t_weight_data, bias=None, stride=stride, padding=padding) #, dilation=1, groups=1)
+    print("Done.")
     return t_output
 
 def hw_input(input_data, input_shape):
@@ -101,7 +110,7 @@ def hw_config(input_shape, weight_shape, stride, padding):
     
 #     ctrl, inputshape, kernelshape, kernelsize, outputshape, outputsize, weightinterval, inputrstcnt
 #     config = np.array([2, 0x000103e0, 0x00040333, 0x00010009, 0x000008de, 49283, 147851, 49727])
-#     config = np.array([2, 0x000103e0, 0x00080333, 0x00120009, 0x0000086f, 12320, 36962, 0x00080333, 24863])
+#     config = np.array([2, 0x000103e0, 0x00080333, 0x00120009, 0x0000086f, 12320, 36962, 24863])
 #     config = np.array([2, 0x000103e0, 0x00080333, 0x00130009, 0x0000084a, 5475, 16427, 0x00080333, 0x000103e0, 16575])
     config = np.array([2, inputshape, kernelshape, conf_addr3, outputshape, outputsize, weightinterval, inputrstcnt])
 #     config = np.array([2, 50175, 0x02110009, 150527, kernelshape, inputshape, 49951])
@@ -122,7 +131,7 @@ def hw_config(input_shape, weight_shape, stride, padding):
     print("inputshape    : %h", "0x{:08x}".format(inputshape))
     print("kernelshape   : %h", "0x{:08x}".format(kernelshape))
     print("kernelsize    : %h", "0x{:08x}".format(kernelsize))
-    print("outputshape   : %d", "0x{:08x}".format(outputshape))
+    print("outputshape   : %h", "0x{:08x}".format(outputshape))
     print("outputsize    : %d", outputsize)
     print("weightinterval: %d", weightinterval)
     print("inputrstcnt   : %d", inputrstcnt)
@@ -130,24 +139,38 @@ def hw_config(input_shape, weight_shape, stride, padding):
     return output_shape
 
 def hw_conv2d(output_width, weight_shape):
-    print("Perform PL Conv...")
+    print("Perform PL Conv...", end="")
     reg.write(0, 1) # start engine
     status = reg.read(10 * 4)
     while (status == 0):
         status = reg.read(10 * 4)
-
+    print("Done.")
+    
+def hw_read_output(output_width, weight_shape):
+    print("Transfer output to PS 0")
     reg.write(0, 4) # allow ps access output memory
 #     regfile[0] = 4
 
-    print("Transfer output to PS 0")
     output_buffer = allocate(shape=(output_width * weight_shape[0]//4, output_width,4), dtype=np.uint8)
     output_size = output_width * output_width * 4 * weight_shape[0]//4
-#     transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address, output_size)
-
-    cdma.transfer(driver.CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address, 32768*4)
-    cdma.transfer(driver.CDMA_BRAM_OUTPUT1_ADDRESS, output_buffer.physical_address + 32768*4, 32768*4)
-    cdma.transfer(driver.CDMA_BRAM_OUTPUT2_ADDRESS, output_buffer.physical_address + 2*32768*4, 32768*4)
-    cdma.transfer(driver.CDMA_BRAM_OUTPUT3_ADDRESS, output_buffer.physical_address + 3*32768*4, output_size - 3*32768*4)
+    
+    read_size = output_size
+    i = 0
+    SIZE_OF_SINGLE_OUTPUT_BRAM = 32768 * 4 # 128 KB
+    output_bram_addr = [
+        driver.CDMA_BRAM_OUTPUT0_ADDRESS,
+        driver.CDMA_BRAM_OUTPUT1_ADDRESS,
+        driver.CDMA_BRAM_OUTPUT2_ADDRESS,
+        driver.CDMA_BRAM_OUTPUT3_ADDRESS
+    ]
+    if (output_size <= SIZE_OF_SINGLE_OUTPUT_BRAM):
+        cdma.transfer(driver.CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address, output_size)
+    else:
+        while (read_size > SIZE_OF_SINGLE_OUTPUT_BRAM):
+            cdma.transfer(output_bram_addr[i], output_buffer.physical_address + SIZE_OF_SINGLE_OUTPUT_BRAM * i, SIZE_OF_SINGLE_OUTPUT_BRAM)
+            read_size = read_size - SIZE_OF_SINGLE_OUTPUT_BRAM
+            i = i + 1
+        cdma.transfer(output_bram_addr[i], output_buffer.physical_address + SIZE_OF_SINGLE_OUTPUT_BRAM * i, read_size)
 
     return output_buffer
 
@@ -160,14 +183,9 @@ def hw_conv2d(output_width, weight_shape):
     #     regfile[0] = 1
 
         status = reg.read(9 * 4)
-#         print(status)
 
         while (status == 0):
             status = reg.read(9 * 4)
-
-#         print(status)
-
-        end_time3 = time.time()
 
         reg.write(0, 4) # allow ps access output memory
 
@@ -234,13 +252,22 @@ def main():
         elif (cmd == "pl_conv"):
             if (is_hw_load):
                 hw_conv_start = time.time()
-                hw_output = hw_conv2d(output_shape[0], weight_shape)
+                hw_conv2d(output_shape[0], weight_shape)
                 hw_conv_end = time.time()
+                hw_output = hw_read_output(output_shape[0], weight_shape)
+                hw_read_end = time.time()
                 print("Execution time on PL: %s s" % (hw_conv_end - hw_conv_start))
+                print("Transfer output time: %s s" % (hw_read_end - hw_conv_end))
             else:
                 print("[Error] hw_load must be executed first")
+
+        elif (cmd == "pl_reset"):
+            print("Reset Engine")
+            cdma.reset()
+            reg.write(0, 2)
             
         elif (cmd == "save"):
+            print("Writing outputs to files...")
             t_write("torch_output.txt", np.transpose(t_output_data, (0, 2, 3, 1)))
             hw_write("hw_output.txt", hw_output)
 
@@ -249,6 +276,7 @@ def main():
             print(" hw_load : load model and data to accelerate system")
             print(" ps_conv : perform conv2d in software only with pytorch")
             print(" pl_conv : perform conv2d offload with accelerate system")
+            print(" pl_reset: soft reset CDMA and engine")
             print(" save    : write conv2d outputs of 2 cases to 2 files")
             print(" exit    : exit program")
         else:

@@ -1,6 +1,8 @@
 from pynq import Overlay
 from pynq import MMIO
 
+version = "dev.582a3ccb.1"
+
 CDMA_BRAM_INPUT_ADDRESS = 0x80000000
 CDMA_BRAM_WEIGHT0_ADDRESS = 0x90000000
 CDMA_BRAM_WEIGHT1_ADDRESS = 0x90001000
@@ -68,7 +70,6 @@ class Cdma:
         self.write(self.BTT, size)
 
         # Step 6
-#         print("Transferring...")
         self.read(self.CDMASR)
         cdmasrIdle = getbit(cdmasr, 1)
         while (cdmasrIdle != 1):
@@ -81,15 +82,13 @@ class Cdma:
         cdmasr = changebit(cdmasr, 12, 1) # clear IOC_Irq
         self.write(self.CDMASR, cdmasr)
 
-        print("Transfered " + str(size) + " bytes from " + str(src) + " to " + str(dst))
-#         print()
+        print("Transfered " + str(size) + " bytes from " + "0x{:08x}".format(src) + " to " + "0x{:08x}".format(dst))
 
     def reset(self):
         cdmacr = self.read(self.CDMACR)
         cdmacr = changebit(cdmacr, 2, 1)
         self.write(self.CDMACR, cdmacr)
         print("Reset CDMA")
-        print()
         
 class Register:
     def __init__(self, overlay):
