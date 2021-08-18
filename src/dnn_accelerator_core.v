@@ -360,6 +360,11 @@ wire                               core_ps_rden;
 wire           [REG_WIDTH - 1 : 0] core_ps_rdat;
 wire                               core_ps_rvld;
 
+wire rst_soft;
+wire rst_p;
+
+assign rst_soft = i_conf_ctrl[1];
+assign rst_p = rst | rst_soft;
 
 // Core
 accelerator_core
@@ -368,7 +373,7 @@ accelerator_core
     )
 accelerator_core_inst(
     .clk                                (clk),
-    .rst                                (rst),
+    .rst                                (rst_p),
     .o_data_req                         (core_o_data_req),
     .o_data_end                         (core_o_data_end),
     .i_data                             (core_i_data),
@@ -414,7 +419,7 @@ assign i_cnfx_padding = i_conf_kernelsize[27:24];
 
 data_req data_req_inst(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .i_req                  (core_o_data_req),
     .i_end                  (core_o_data_end),
     .i_stall                (pixelconcat_ostall),
@@ -430,7 +435,7 @@ data_req data_req_inst(
 
 pixel_concat pixel_concat_inst(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .idat                   (pixelconcat_idat),
     .ival                   (pixelconcat_ivld),
     .odat                   (core_i_data),
@@ -445,7 +450,7 @@ bram_ctrl
     )
 data_bram_ctrl_inst(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (datareq_o_addr),
     .wren                   (0),
     .idat                   (0),
@@ -474,7 +479,7 @@ wire                      weightreq_mem3_ovld;
 
 weight_req weight_req_inst(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .i_req                  (core_o_weight_req),
     .o_dat                  (core_i_weight),
     .o_vld                  (core_i_weight_vld),
@@ -497,7 +502,7 @@ bram_ctrl
     )
 weight_bram_ctrl_inst_0(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (weightreq_memx_addr),
     .wren                   (0),
     .idat                   (0),
@@ -519,7 +524,7 @@ bram_ctrl
     )
 weight_bram_ctrl_inst_1(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (weightreq_memx_addr),
     .wren                   (0),
     .idat                   (0),
@@ -541,7 +546,7 @@ bram_ctrl
     )
 weight_bram_ctrl_inst_2(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (weightreq_memx_addr),
     .wren                   (0),
     .idat                   (0),
@@ -563,7 +568,7 @@ bram_ctrl
     )
 weight_bram_ctrl_inst_3(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (weightreq_memx_addr),
     .wren                   (0),
     .idat                   (0),
@@ -653,7 +658,7 @@ bram_ctrl
     )
 psum_bram_ctrl_inst_0(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (bramctrl0_radd),
     .wren                   (0),
     .idat                   (0),
@@ -675,7 +680,7 @@ bram_ctrl
     )
 psum_bram_ctrl_inst_1(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (bramctrl1_wadd),
     .wren                   (bramctrl1_wren),
     .idat                   (core_memctrl0_idat),
@@ -707,7 +712,7 @@ bram_ctrl
     )
 psum_bram_ctrl_inst_2(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (bramctrl2_radd),
     .wren                   (0),
     .idat                   (0),
@@ -729,7 +734,7 @@ bram_ctrl
     )
 psum_bram_ctrl_inst_3(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (bramctrl3_wadd),
     .wren                   (bramctrl3_wren),
     .idat                   (core_memctrl0_idat),
@@ -751,7 +756,7 @@ bram_ctrl
     )
 psum_bram_ctrl_inst_4(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (bramctrl4_radd),
     .wren                   (0),
     .idat                   (0),
@@ -773,7 +778,7 @@ bram_ctrl
     )
 psum_bram_ctrl_inst_5(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (bramctrl5_wadd),
     .wren                   (bramctrl5_wren),
     .idat                   (core_memctrl0_idat),
@@ -795,7 +800,7 @@ bram_ctrl
     )
 psum_bram_ctrl_inst_6(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (bramctrl6_radd),
     .wren                   (0),
     .idat                   (0),
@@ -817,7 +822,7 @@ bram_ctrl
     )
 psum_bram_ctrl_inst_7(
     .clk                    (clk),
-    .rst                    (rst),
+    .rst                    (rst_p),
     .addr                   (bramctrl7_wadd),
     .wren                   (bramctrl7_wren),
     .idat                   (core_memctrl0_idat),
@@ -850,7 +855,7 @@ assign ps_rvld = dbg_cnt_register_rvld | core_ps_rvld;
 
 reg_access_ps_gen ps_dbg(
     .clk        (clk),
-    .rst        (rst),
+    .rst        (rst_p),
     .host_addr  (i_conf_addr),
     .host_idat  (i_conf_data),
     .host_odat  (dbg_reg_data),

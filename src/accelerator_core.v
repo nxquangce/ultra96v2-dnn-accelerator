@@ -116,8 +116,8 @@ wire  [BIT_WIDTH * 2 - 1 : 0] accum_i_psum [NUM_KERNEL - 1 : 0];
 wire     [NUM_KERNEL - 1 : 0] accum_i_psum_vld;
 wire                          accum_i_psum_end;
 
-wire                          rst_soft;
-wire                          rst_p;
+// wire                          rst_soft;
+// wire                          rst_p;
 wire                          i_cnfx_enable;
 wire                          kcpe_done;
 wire                          psum_done;
@@ -146,12 +146,12 @@ assign i_cnfx_padding = i_conf_kernelsize[27:24];
 wire [7 : 0] valid_input_shape;
 assign valid_input_shape = (i_conf_inputshape[7:0] + i_cnfx_padding - i_conf_kernelshape[3:0]);
 
-assign rst_soft = i_conf_ctrl[1];
-assign rst_p = rst | rst_soft;
+// assign rst_soft = i_conf_ctrl[1];
+// assign rst_p = rst | rst_soft;
 
 line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .clk                                (clk),
-    .rst                                (rst_p),
+    .rst                                (rst),
     .o_data_req                         (o_data_req),
     .o_data_end                         (o_data_end),
     .i_data                             (i_data),
@@ -191,7 +191,7 @@ psum_accum_ctrl
     )
 psum_accum_ctrl_0(
     .clk                        (clk),
-    .rst                        (rst_p),
+    .rst                        (rst),
     .psum_kn0_dat               (accum_i_psum[0]),
     .psum_kn0_vld               (accum_i_psum_vld[0]),
     .psum_kn1_dat               (accum_i_psum[1]),

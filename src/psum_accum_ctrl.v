@@ -306,16 +306,48 @@ end
 assign psum_knx_end_pp_vld = psum_knx_end_pp[MEM_DELAY - 1];
 
 always @(posedge clk) begin
-    psum_out_cnt_max_vld_pp[0] <= psum_out_cnt_max_vld;
+    psum_out_cnt_max_vld_pp[0] <= kernel_done_vld; // psum_out_cnt_max_vld;
     psum_out_cnt_max_vld_pp[1] <= psum_out_cnt_max_vld_pp[0];
     psum_out_cnt_max_vld_pp[2] <= psum_out_cnt_max_vld_pp[1];
 end
 
+// zero vld signal to force read data zeros at first psum values
 wire psum_zero_enb_vld;
-assign psum_zero_enb_vld = (psum_out_cnt_max_vld_pp[MEM_DELAY] & con_enb) | con_enb_vld;
+wire pad_skip_end;
+wire pad_skip_vld;
+reg psum_zero_enb_vld_pp;
+reg pad_skip_reg;
+reg [ADDR_WIDTH - 1 : 0] pad_skip_addr;
+
+assign pad_skip_vld = psum_zero_enb & (addr_cache[MEM_DELAY - 1] != base_addr) & psum_zero_enb_vld_pp;
 
 always @(posedge clk) begin
-    if (rst | psum_knx_end_pp_vld) begin
+    if (rst | pad_skip_end) begin
+        pad_skip_reg <= 0;
+    end
+    else if (~pad_skip_reg) begin
+        pad_skip_reg <= pad_skip_vld;
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        pad_skip_addr <= 0;
+    end
+    else if ((~pad_skip_reg) & pad_skip_vld) begin
+        pad_skip_addr <= addr_cache[MEM_DELAY - 1];
+    end
+end
+
+assign psum_zero_enb_vld = (psum_out_cnt_max_vld_pp[MEM_DELAY]) | con_enb_vld | init;
+assign pad_skip_end      = pad_skip_reg & (addr_cache[MEM_DELAY - 1] == (pad_skip_addr - 1'b1));
+
+always @(posedge clk) begin
+    psum_zero_enb_vld_pp <= psum_zero_enb_vld;
+end
+
+always @(posedge clk) begin
+    if (rst | (psum_knx_end_pp_vld & (~pad_skip_reg)) | pad_skip_end) begin
         psum_zero_enb <= 0;
     end
     else if (psum_zero_enb_vld) begin
