@@ -8,14 +8,15 @@ import tflite_runtime.interpreter as tflite
 import torch
 import time
 
-overlay_name = "zynqmpsoc_conv_dbg_20210731_1222"
-app_version = "dev.582a3ccb.1"
+overlay_name = "zynqmpsoc_conv_dbg_20210804_2339" #zynqmpsoc_conv_dbg_20210804_2112" #zynqmpsoc_conv_dbg_20210731_1222"
+app_version = "dev.b85da2eb.2"
+driver_version = "dev.582a3ccb.0"
 
 print("+---------------------------------------+")
 print("| Welcome to hardware accelerator demo. |")
 print("+---------------------------------------+")
 print("|    App version   : " + app_version + "     |")
-print("|    Driver version: " + driver.version + "     |")
+print("|    Driver version: " + driver_version + "     |")
 print("+---------------------------------------+")
 print()
 print("Config hardware...")
@@ -23,7 +24,7 @@ print("Harware version: " + overlay_name)
 print()
 
 overlay = Overlay('./overlay/dnn/' +  overlay_name + '.bit')
-model_file = './models/mobilenet_v1_1.0_224_quant.tflite'
+model_file = './models/mobilenet_v1_1.0_128_quant.tflite'
 cdma = driver.Cdma(overlay)
 reg = driver.Register(overlay)
 
@@ -35,7 +36,7 @@ def load_weight():
     return weight_l1
 
 def load_input():
-    image = Image.open("input224.jpg")
+    image = Image.open("input128.jpg")
     data = np.array(image)
     input_data = np.expand_dims(data, 0)  # shape (1, y_pixels, x_pixels, n_bands)
     return input_data
@@ -53,11 +54,11 @@ def t_input(input_data):
     
 
 def t_conv2d(t_input_data, t_weight_data, stride, pad):
-    padding = 0
-    if (pad > 0):
-        padding = 1
+    pad_start = pad // 2
+    pad_end = pad - pad_start
+    t_input_data = torch.nn.functional.pad(t_input_data, (pad_start, pad_end, pad_start, pad_end))
     print("Perform PS Conv...", end="")
-    t_output = torch.nn.functional.conv2d(t_input_data, t_weight_data, bias=None, stride=stride, padding=padding) #, dilation=1, groups=1)
+    t_output = torch.nn.functional.conv2d(t_input_data, t_weight_data, bias=None, stride=stride, padding=0) #, dilation=1, groups=1)
     print("Done.")
     return t_output
 
@@ -209,10 +210,10 @@ def hw_write(file_name, output_buffer):
             np.savetxt(outfile, slice_2d, fmt='% 4d')
 
 def main():
-    input_shape = [224, 224, 3]
-    weight_shape = [8, 3, 3, 3]
-    stride = 1
-    padding = 2
+    input_shape = [128, 128, 3]
+    weight_shape = [32, 3, 3, 3]
+    stride = 2
+    padding = 1
     output_shape = None
     input_data = None
     weight_data = None
@@ -236,10 +237,11 @@ def main():
             padding = int(input("Enter padding: "))
             t_input_data = t_input(input_data)
             t_weight_data = t_weight(weight_data, num_of_kernel)
+            is_hw_load = False
         
         elif (cmd == "hw_load"):
             hw_weight_data = hw_weight(weight_data)
-            hw_input_data = hw_input(input_data, [224, 224, 3])
+            hw_input_data = hw_input(input_data, input_shape)
             output_shape = hw_config(input_shape, weight_shape, stride, padding)
             is_hw_load = True
         
