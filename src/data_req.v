@@ -28,6 +28,8 @@ module data_req(
     i_end,
     o_addr,
     o_rden,
+    i_cnfx_stride,
+    i_cnfx_padding,
     i_conf_inputshape,
     i_conf_kernelshape,
     dbg_datareq_knlinex_cnt,
@@ -40,29 +42,72 @@ parameter ADDR_WIDTH        = 32;
 parameter KERNEL_SIZE_WIDTH = 2;
 parameter REG_WIDTH         = 32;
 
+parameter STRIDE_WIDTH      = 4;
+parameter PADDING_WIDTH     = 4;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
-input                       clk;
-input                       rst;
-input                       i_req;
-input                       i_stall;
-input                       i_end;
-output [ADDR_WIDTH - 1 : 0] o_addr;
-output                      o_rden;
-input   [REG_WIDTH - 1 : 0] i_conf_inputshape;
-input   [REG_WIDTH - 1 : 0] i_conf_kernelshape;
-output  [REG_WIDTH - 1 : 0] dbg_datareq_knlinex_cnt;
-output  [REG_WIDTH - 1 : 0] dbg_datareq_addr_reg;
+input                          clk;
+input                          rst;
+input                          i_req;
+input                          i_stall;
+input                          i_end;
+output    [ADDR_WIDTH - 1 : 0] o_addr;
+output                         o_rden;
+input   [STRIDE_WIDTH - 1 : 0] i_cnfx_stride;
+input  [PADDING_WIDTH - 1 : 0] i_cnfx_padding;
+input      [REG_WIDTH - 1 : 0] i_conf_inputshape;
+input      [REG_WIDTH - 1 : 0] i_conf_kernelshape;
+output     [REG_WIDTH - 1 : 0] dbg_datareq_knlinex_cnt;
+output     [REG_WIDTH - 1 : 0] dbg_datareq_addr_reg;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
 reg        [ADDR_WIDTH - 1 : 0] addr_reg;
 reg [KERNEL_SIZE_WIDTH - 1 : 0] knlinex_cnt;
 wire                            knlinex_cnt_max_vld;
+reg        [ADDR_WIDTH - 1 : 0] base_addr_0;
 reg        [ADDR_WIDTH - 1 : 0] base_addr_1;
 reg        [ADDR_WIDTH - 1 : 0] base_addr_2;
 
 reg                             i_stall_cache;
 wire                            stall_cache_vld;
+
+reg        [ADDR_WIDTH - 1 : 0] stride_range;
+wire       [ADDR_WIDTH - 1 : 0] stride_base_addr;
+wire                            row_end_vld;
+reg         [REG_WIDTH - 1 : 0] row_req_cnt;
+
+reg     [PADDING_WIDTH - 1 : 0] pad_sta;
+reg     [PADDING_WIDTH - 1 : 0] pad_end;
+
+always @(posedge clk) begin
+    pad_sta <= i_cnfx_padding >> 1;
+    pad_end <= i_cnfx_padding - (i_cnfx_padding >> 1);
+end
+
+assign row_end_vld = row_req_cnt == (i_conf_inputshape[7:0] - 1'b1);
+
+always @(posedge clk) begin
+    if (rst) begin
+        row_req_cnt <= 0;
+    end
+    else if (i_req) begin
+        row_req_cnt <= (row_end_vld) ? 0 : row_req_cnt + 1'b1;
+    end
+end
+
+always @(posedge clk) begin
+    case (i_cnfx_stride)
+        4'd1: stride_range <= 0;
+        4'd2: stride_range <= i_conf_inputshape[7:0];
+        4'd3: stride_range <= i_conf_inputshape[7:0] << 1;
+        4'd4: stride_range <= i_conf_inputshape[7:0] << 1 + i_conf_inputshape[7:0];
+        default: stride_range <= 0;
+    endcase
+end
+
+assign stride_base_addr = ((stride_range << 1) + stride_range) >> 2;
 
 assign stall_cache_vld = i_stall & (~i_req);
 
@@ -86,9 +131,17 @@ always @(posedge clk) begin
     end
 end
 
+wire [ADDR_WIDTH - 1 : 0] row_addr_range;
+wire [ADDR_WIDTH - 1 : 0] sub_pad_addr;
+
+assign row_addr_range = (((i_conf_inputshape[7:0] << 1) + i_conf_inputshape[7:0]) >> 2);
+assign sub_pad_addr   = (pad_sta == 4'd0) ? 0 :
+                        (pad_sta == 4'd1) ? row_addr_range:
+                        (pad_sta == 4'd2) ? row_addr_range << pad_sta : 0;
+
 always @(posedge clk) begin
-    base_addr_1 <= (((i_conf_inputshape[7:0] << 1) + i_conf_inputshape[7:0]) >> 2);
-    base_addr_2 <= ((((i_conf_inputshape[7:0] << 1) << 1) + (i_conf_inputshape[7:0] << 1)) >> 2);
+    base_addr_1 <= row_addr_range - sub_pad_addr;
+    base_addr_2 <= ((((i_conf_inputshape[7:0] << 1) << 1) + (i_conf_inputshape[7:0] << 1)) >> 2) - sub_pad_addr;
 end
 
 always @(posedge clk) begin
@@ -101,6 +154,9 @@ always @(posedge clk) begin
             2'b01: addr_reg <= base_addr_2;
             default: addr_reg <= 0;
         endcase
+    end
+    else if (row_end_vld) begin
+        addr_reg <= addr_reg + stride_base_addr;
     end
     else if (o_rden) begin
         addr_reg <= addr_reg + 1'b1;

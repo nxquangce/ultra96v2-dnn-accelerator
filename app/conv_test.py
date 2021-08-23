@@ -10,7 +10,7 @@ import torch
 
 import time
 
-overlay_name = "zynqmpsoc_conv_dbg_20210604_0122"
+overlay_name = "zynqmpsoc_conv_dbg_20210708_2319"
 
 print("=== Config hardware ===")
 print(overlay_name)
@@ -103,6 +103,11 @@ def reset(cdma):
     cdmacr = changebit(cdmacr, 2, 1)
     print(cdmacr)
     cdma.write(Cdma.CDMACR, cdmacr)
+
+def indirect_read(reg, addr):
+    reg.write(8 * 4, addr)
+    data = reg.read(11 * 4)
+    return data
     
 def tconv2d():
     print("==== Load weight ====")
@@ -229,9 +234,9 @@ def main():
     
     end_time1 = time.time()
     
-    readback_buffer = allocate(shape=(54,4), dtype=np.uint8)
-    transfer(cdma, CDMA_BRAM_WEIGHT0_ADDRESS, readback_buffer.physical_address, weight_size)
-    print(readback_buffer)
+#     readback_buffer = allocate(shape=(54,4), dtype=np.uint8)
+#     transfer(cdma, CDMA_BRAM_WEIGHT0_ADDRESS, readback_buffer.physical_address, weight_size)
+#     print(readback_buffer)
 
     
 #     print("Load weight data: %s seconds" % (end_time_load1 - start_time1))
@@ -240,34 +245,53 @@ def main():
 #     print()
     
     print("==== Perform PL Conv ====")
-    config = np.array([0, 49283, 9, 147851, 0x00080333, 66528, 49727])
-    regfile = reg.array[0:7]
+    input_shape = [224, 224, 3]
+    weight_shape = [8, 3, 3, 3]
+    stride = 2
+    padding = 1
+    
+    output_width = (input_shape[0] - weight_shape[1] + padding) // stride + 1
+    output_shape = [output_width, output_width, weight_shape[0]]
+    
+    minrow = 0 if (padding == 0) else 1
+    inputrstcnt = (output_width - minrow) * input_shape[0] - 1
+    num_invalid_row = input_shape[0] + padding - output_width * stride - 1
+    num_invalid_row = 1
+
+    outputsize = output_width * output_width - 1
+    conf_addr3 = (padding << (6*4)) + (num_invalid_row << (5*4)) + (stride << (4*4)) + weight_shape[1]**2
+    weightinterval = output_width ** 2 * 3 - 1
+
+    inputshape = (1 << (4*4)) + (input_shape[2] << (2*4)) + input_shape[0]
+    kernelshape = (weight_shape[0] << (4*4)) + (weight_shape[3] << (2*4)) + (weight_shape[1] << (1*4)) + weight_shape[3]
+    outputshape = (weight_shape[0] << (2*4)) + (output_width)
+    
+#     ctrl, inputshape, kernelshape, kernelsize, outputshape, outputsize, weightinterval, inputrstcnt
+#     config = np.array([2, 0x000103e0, 0x00040333, 0x00010009, 0x000008de, 49283, 147851, 49727])
+#     config = np.array([2, 0x000103e0, 0x00080333, 0x00120009, 0x0000086f, 12320, 36962, 0x00080333, 24863])
+#     config = np.array([2, 0x000103e0, 0x00080333, 0x00130009, 0x0000084a, 5475, 16427, 0x00080333, 0x000103e0, 16575])
+    config = np.array([2, inputshape, kernelshape, conf_addr3, outputshape, outputsize, weightinterval, inputrstcnt])
+#     config = np.array([2, 50175, 0x02110009, 150527, kernelshape, inputshape, 49951])
+    regfile = reg.array[0:8]
     
     
-    reg.write(0, 2) # reset
+#     reg.write(0, 2) # reset
     regfile[:] = config
-#     reg.write(0, 0) # clear reset
-#     reg.write(1 * 4, 49283) # outputsize
-#     reg.write(2 * 4, 9) # kernelsize
-#     reg.write(3 * 4, 147851) # weightinterval
-# #     reg.write(4 * 4, 2097971) # kernelshape
-#     reg.write(4 * 4, 0x00080333) # kernelshape 4
-# #     reg.write(4 * 4, 0x00200333) # kernelshape 32
-#     reg.write(5 * 4, 66528) # inputshape
-#     reg.write(6 * 4, 49727) # inputrstcnt
-    outputsize = reg.read(1 * 4) # outputsize
-    kernelsize = reg.read(2 * 4) # kernelsize
-    weightinterval = reg.read(3 * 4) # weightinterval
-    kernelshape = reg.read(4 * 4) # kernelshape
-    inputshape = reg.read(5 * 4) # inputshape
-    inputrstcnt = reg.read(6 * 4) # inputrstcnt
+    inputshape = reg.read(1 * 4)
+    kernelshape = reg.read(2 * 4)
+    kernelsize = reg.read(3 * 4)
+    outputshape = reg.read(4 * 4)
+    outputsize = reg.read(5 * 4)
+    weightinterval = reg.read(6 * 4)
+    inputrstcnt = reg.read(7 * 4)
     
     print("Config engine registers")
+    print("inputshape    : %h", "0x{:08x}".format(inputshape))
+    print("kernelshape   : %h", "0x{:08x}".format(kernelshape))
+    print("kernelsize    : %h", "0x{:08x}".format(kernelsize))
+    print("outputshape   : %d", "0x{:08x}".format(outputshape))
     print("outputsize    : %d", outputsize)
-    print("kernelsize    : %d", kernelsize)
     print("weightinterval: %d", weightinterval)
-    print("kernelshape   : %d", kernelshape)
-    print("inputshape    : %d", inputshape)
     print("inputrstcnt   : %d", inputrstcnt)
     print()
     print("Start engine")
@@ -282,10 +306,10 @@ def main():
     
     reg.write(0, 1) # start engine
     print("Start control: ", reg.read(0))
-    status = reg.read(7 * 4)
+    status = reg.read(10 * 4)
     print(status)
     while (status == 0):
-        status = reg.read(7 * 4)
+        status = reg.read(10 * 4)
         
     print(status)
 
@@ -295,19 +319,19 @@ def main():
     print()
     print("=== Dbg Status ===")
     
-    dbg_datareq_knlinex_cnt = reg.read(8 * 4)
-    dbg_datareq_addr_reg = reg.read(9 * 4)
-    dbg_linekcpe_valid_knx_cnt = reg.read(10 * 4)
-    dbg_linekcpe_psum_line_vld_cnt = reg.read(11 * 4)
-    dbg_linekcpe_idata_req_cnt = reg.read(12 * 4)
-    dbg_linekcpe_odata_req_cnt = reg.read(13 * 4)
-    dbg_linekcpe_weight_line_req_cnt = reg.read(14 * 4)
-    dbg_linekcpe_weight_done_cnt = reg.read(15 * 4)
-    dbg_linekcpe_kernel_done_cnt = reg.read(16 * 4)
-    dbg_psumacc_base_addr = reg.read(17 * 4)
-    dbg_psumacc_psum_out_cnt = reg.read(18 * 4)
-    dbg_psumacc_rd_addr = reg.read(19 * 4)
-    dbg_psumacc_wr_addr = reg.read(20 * 4)
+    dbg_datareq_addr_reg = indirect_read(reg, 0xf0000000)
+    dbg_datareq_knlinex_cnt = indirect_read(reg, 0xf0000001)
+    dbg_psumacc_rd_addr = indirect_read(reg, 0xf0000002)
+    dbg_psumacc_wr_addr = indirect_read(reg, 0xf0000003)
+    dbg_psumacc_psum_out_cnt = indirect_read(reg, 0xf0000004)
+    dbg_psumacc_base_addr = indirect_read(reg, 0xf0000005)
+    dbg_linekcpe_kernel_done_cnt = indirect_read(reg, 0xf0000006)
+    dbg_linekcpe_weight_done_cnt = indirect_read(reg, 0xf0000007)
+    dbg_linekcpe_weight_line_req_cnt = indirect_read(reg, 0xf0000008)
+    dbg_linekcpe_odata_req_cnt = indirect_read(reg, 0xf0000009)
+    dbg_linekcpe_idata_req_cnt = indirect_read(reg, 0xf000000a)
+    dbg_linekcpe_psum_line_vld_cnt = indirect_read(reg, 0xf000000b)
+    dbg_linekcpe_valid_knx_cnt = indirect_read(reg, 0xf000000c)
     
     print("dbg_datareq_knlinex_cnt         : ", dbg_datareq_knlinex_cnt)
     print("dbg_datareq_addr_reg            : ", dbg_datareq_addr_reg)
@@ -328,75 +352,79 @@ def main():
     
     reg.write(0, 4) # allow ps access output memory
 #     regfile[0] = 4
-    
-    print("Transfer output to PS")
-    output_buffer = allocate(shape=(222*4,222,4), dtype=np.uint8)
-    output_size = 222 * 222 * 8
+
+    print("Transfer output to PS 0")
+    output_buffer = allocate(shape=(output_width * weight_shape[0]//4, output_width,4), dtype=np.uint8)
+#     output_buffer = allocate(shape=(222*4,222,4), dtype=np.uint8)
+    output_size = output_width * output_width * 4 * weight_shape[0]//4
 #     transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address, output_size)
+
     transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address, 32768*4)
     transfer(cdma, CDMA_BRAM_OUTPUT1_ADDRESS, output_buffer.physical_address + 32768*4, 32768*4)
     transfer(cdma, CDMA_BRAM_OUTPUT2_ADDRESS, output_buffer.physical_address + 2*32768*4, 32768*4)
     transfer(cdma, CDMA_BRAM_OUTPUT3_ADDRESS, output_buffer.physical_address + 3*32768*4, output_size - 3*32768*4)
-    
+
     end_time2 = time.time()
 
-#     reg.write(4 * 4, 0x00100333) # kernelshape 4
-    reg.write(0, 17) # continue engine
-#     reg.write(0, 1) # continue engine
-#     regfile[0] = 17
-#     regfile[0] = 1
+    conf_conenb = False
+    if (conf_conenb):
+    #     reg.write(4 * 4, 0x00100333) # kernelshape 4
+        reg.write(0, 17) # continue engine
+    #     reg.write(0, 1) # continue engine
+    #     regfile[0] = 17
+    #     regfile[0] = 1
+
+        status = reg.read(9 * 4)
+        print(status)
+
+        while (status == 0):
+            status = reg.read(9 * 4)
+
+        print(status)
+
+        end_time3 = time.time()
+
+        reg.write(0, 4) # allow ps access output memory
+
+        print("Transfer output to PS 1")
+        transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address + output_size, 32768*4)
+        transfer(cdma, CDMA_BRAM_OUTPUT1_ADDRESS, output_buffer.physical_address + output_size + 32768*4, 32768*4)
+        transfer(cdma, CDMA_BRAM_OUTPUT2_ADDRESS, output_buffer.physical_address + output_size + 2*32768*4, 32768*4)
+        transfer(cdma, CDMA_BRAM_OUTPUT3_ADDRESS, output_buffer.physical_address + output_size + 3*32768*4, output_size - 3*32768*4)
     
-    status = reg.read(7 * 4)
-    print(status)
-    
-    while (status == 0):
-        status = reg.read(7 * 4)
-        
-    print(status)
-    
-    end_time3 = time.time()
-    
-    reg.write(0, 4) # allow ps access output memory
-    
-    print("Transfer output to PS")
-    transfer(cdma, CDMA_BRAM_OUTPUT0_ADDRESS, output_buffer.physical_address + output_size, 32768*4)
-    transfer(cdma, CDMA_BRAM_OUTPUT1_ADDRESS, output_buffer.physical_address + output_size + 32768*4, 32768*4)
-    transfer(cdma, CDMA_BRAM_OUTPUT2_ADDRESS, output_buffer.physical_address + output_size + 2*32768*4, 32768*4)
-    transfer(cdma, CDMA_BRAM_OUTPUT3_ADDRESS, output_buffer.physical_address + output_size + 3*32768*4, output_size - 3*32768*4)
-    
-    print()
-    print("=== Dbg Status ===")
-    
-    dbg_datareq_knlinex_cnt = reg.read(8 * 4)
-    dbg_datareq_addr_reg = reg.read(9 * 4)
-    dbg_linekcpe_valid_knx_cnt = reg.read(10 * 4)
-    dbg_linekcpe_psum_line_vld_cnt = reg.read(11 * 4)
-    dbg_linekcpe_idata_req_cnt = reg.read(12 * 4)
-    dbg_linekcpe_odata_req_cnt = reg.read(13 * 4)
-    dbg_linekcpe_weight_line_req_cnt = reg.read(14 * 4)
-    dbg_linekcpe_weight_done_cnt = reg.read(15 * 4)
-    dbg_linekcpe_kernel_done_cnt = reg.read(16 * 4)
-    dbg_psumacc_base_addr = reg.read(17 * 4)
-    dbg_psumacc_psum_out_cnt = reg.read(18 * 4)
-    dbg_psumacc_rd_addr = reg.read(19 * 4)
-    dbg_psumacc_wr_addr = reg.read(20 * 4)
-    
-    print("dbg_datareq_knlinex_cnt         : ", dbg_datareq_knlinex_cnt)
-    print("dbg_datareq_addr_reg            : ", dbg_datareq_addr_reg)
-    print()
-    print("dbg_linekcpe_valid_knx_cnt      : ", dbg_linekcpe_valid_knx_cnt)
-    print("dbg_linekcpe_psum_line_vld_cnt  : ", dbg_linekcpe_psum_line_vld_cnt)
-    print("dbg_linekcpe_idata_req_cnt      : ", dbg_linekcpe_idata_req_cnt)
-    print("dbg_linekcpe_odata_req_cnt      : ", dbg_linekcpe_odata_req_cnt)
-    print("dbg_linekcpe_weight_line_req_cnt: ", dbg_linekcpe_weight_line_req_cnt)
-    print("dbg_linekcpe_weight_done_cnt    : ", dbg_linekcpe_weight_done_cnt)
-    print("dbg_linekcpe_kernel_done_cnt    : ", dbg_linekcpe_kernel_done_cnt)
-    print()
-    print("dbg_psumacc_base_addr           : ", dbg_psumacc_base_addr)
-    print("dbg_psumacc_psum_out_cnt        : ", dbg_psumacc_psum_out_cnt)
-    print("dbg_psumacc_rd_addr             : ", dbg_psumacc_rd_addr)
-    print("dbg_psumacc_wr_addr             : ", dbg_psumacc_wr_addr)
-    print()
+        print()
+        print("=== Dbg Status ===")
+
+        dbg_datareq_addr_reg = indirect_read(reg, 0xf0000000)
+        dbg_datareq_knlinex_cnt = indirect_read(reg, 0xf0000001)
+        dbg_psumacc_rd_addr = indirect_read(reg, 0xf0000002)
+        dbg_psumacc_wr_addr = indirect_read(reg, 0xf0000003)
+        dbg_psumacc_psum_out_cnt = indirect_read(reg, 0xf0000004)
+        dbg_psumacc_base_addr = indirect_read(reg, 0xf0000005)
+        dbg_linekcpe_kernel_done_cnt = indirect_read(reg, 0xf0000006)
+        dbg_linekcpe_weight_done_cnt = indirect_read(reg, 0xf0000007)
+        dbg_linekcpe_weight_line_req_cnt = indirect_read(reg, 0xf0000008)
+        dbg_linekcpe_odata_req_cnt = indirect_read(reg, 0xf0000009)
+        dbg_linekcpe_idata_req_cnt = indirect_read(reg, 0xf000000a)
+        dbg_linekcpe_psum_line_vld_cnt = indirect_read(reg, 0xf000000b)
+        dbg_linekcpe_valid_knx_cnt = indirect_read(reg, 0xf000000c)
+
+        print("dbg_datareq_knlinex_cnt         : ", dbg_datareq_knlinex_cnt)
+        print("dbg_datareq_addr_reg            : ", dbg_datareq_addr_reg)
+        print()
+        print("dbg_linekcpe_valid_knx_cnt      : ", dbg_linekcpe_valid_knx_cnt)
+        print("dbg_linekcpe_psum_line_vld_cnt  : ", dbg_linekcpe_psum_line_vld_cnt)
+        print("dbg_linekcpe_idata_req_cnt      : ", dbg_linekcpe_idata_req_cnt)
+        print("dbg_linekcpe_odata_req_cnt      : ", dbg_linekcpe_odata_req_cnt)
+        print("dbg_linekcpe_weight_line_req_cnt: ", dbg_linekcpe_weight_line_req_cnt)
+        print("dbg_linekcpe_weight_done_cnt    : ", dbg_linekcpe_weight_done_cnt)
+        print("dbg_linekcpe_kernel_done_cnt    : ", dbg_linekcpe_kernel_done_cnt)
+        print()
+        print("dbg_psumacc_base_addr           : ", dbg_psumacc_base_addr)
+        print("dbg_psumacc_psum_out_cnt        : ", dbg_psumacc_psum_out_cnt)
+        print("dbg_psumacc_rd_addr             : ", dbg_psumacc_rd_addr)
+        print("dbg_psumacc_wr_addr             : ", dbg_psumacc_wr_addr)
+        print()
     
     print("================= Result ==========================")
     print("Reshape                      : %s seconds" % (end_time_load1 - start_time1))
@@ -404,8 +432,8 @@ def main():
     print()
     
     print("Processing time 1            : %s seconds" % (end_time_load2 - start_time2))
-    print("Processing time 2            : %s seconds" % (end_time3 - end_time2))
-    print("Processing time with overflow: %s seconds" % (end_time3 - start_time2))
+#     print("Processing time 2            : %s seconds" % (end_time3 - end_time2))
+#     print("Processing time with overflow: %s seconds" % (end_time3 - start_time2))
     print()
     
     print("Transfer output time         : %s seconds" % (end_time2 - end_time_load2))
@@ -413,6 +441,10 @@ def main():
     
     print("Total except load data to DDR: %s s" % (end_time2 - end_time_load0))
     print("Total                        : %s s" % (end_time2 - start_time0))
+    
+    
+    time_cycle = indirect_read(reg, 0xf0000010)
+    print("time = ", time_cycle, " x 1/299e6 = ", time_cycle/299999999, " s")
     
     
 #     f = open("output/conv_l1.txt", "w")

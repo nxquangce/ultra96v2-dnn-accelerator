@@ -27,6 +27,7 @@ module input_buffer(
     i_data,
     i_data_vld,
     i_data_req,
+    i_step,
     o_data,
     o_data_vld,
     data_counter,
@@ -51,6 +52,7 @@ input  wire                                 rst;
 input  wire [DAT_WIDTH - 1 : 0]             i_data;
 input  wire                                 i_data_vld;
 input  wire                                 i_data_req;
+input  wire [FF_ADDR_WIDTH - 1 : 0]         i_step;
 output wire [DAT_WIDTH * NUM_RDATA - 1 : 0] o_data;
 output wire                                 o_data_vld;
 output wire [FF_ADDR_WIDTH : 0]             data_counter;
@@ -78,6 +80,7 @@ fifo_ch0
     .wr_req       (i_data_vld),
     .wr_data      (i_data),
     .rd_req       (i_data_req),
+    .rd_step      (i_step),
     .rd_data      (o_data),
     .rd_data_vld  (o_data_vld),
     .data_counter (data_counter),

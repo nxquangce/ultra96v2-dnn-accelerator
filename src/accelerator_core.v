@@ -30,14 +30,6 @@ module accelerator_core(
     o_weight_req,
     i_weight,
     i_weight_vld,
-    // o_psum_kn0,
-    // o_psum_kn0_vld,
-    // o_psum_kn1,
-    // o_psum_kn1_vld,
-    // o_psum_kn2,
-    // o_psum_kn2_vld,
-    // o_psum_kn3,
-    // o_psum_kn3_vld,
     memctrl0_wadd,
     memctrl0_wren,
     memctrl0_idat,
@@ -52,19 +44,14 @@ module accelerator_core(
     i_conf_kernelshape,
     i_conf_inputshape,
     i_conf_inputrstcnt,
+    i_conf_outputshape,
     o_conf_status,
-    dbg_linekcpe_valid_knx_cnt,
-    dbg_linekcpe_psum_line_vld_cnt,
-    dbg_linekcpe_idata_req_cnt,
-    dbg_linekcpe_odata_req_cnt,
-    dbg_linekcpe_weight_line_req_cnt,
-    dbg_linekcpe_weight_done_cnt,
-    dbg_linekcpe_kernel_done_cnt,
-    dbg_psumacc_base_addr,
-    dbg_psumacc_psum_out_cnt,
-    dbg_psumacc_rd_addr,
-    dbg_psumacc_wr_addr,
-
+    ps_addr,
+    ps_wren,
+    ps_wdat,
+    ps_rden,
+    ps_rdat,
+    ps_rvld,
     );
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,6 +72,9 @@ parameter IN_WEIGHT_DAT_WIDTH = BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL;
 
 parameter OUTPUT_MEM_DELAY = 1;
 
+parameter STRIDE_WIDTH      = 4;
+parameter PADDING_WIDTH     = 4;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
 input  wire                               clk;
@@ -96,14 +86,6 @@ input  wire [IN_INPUT_DAT_WIDTH  - 1 : 0] i_data;
 input  wire [IN_WEIGHT_DAT_WIDTH - 1 : 0] i_weight;
 input  wire                               i_data_vld;
 input  wire                               i_weight_vld;
-// output wire           [BIT_WIDTH - 1 : 0] o_psum_kn0;
-// output wire           [BIT_WIDTH - 1 : 0] o_psum_kn1;
-// output wire           [BIT_WIDTH - 1 : 0] o_psum_kn2;
-// output wire           [BIT_WIDTH - 1 : 0] o_psum_kn3;
-// output wire                               o_psum_kn0_vld;
-// output wire                               o_psum_kn1_vld;
-// output wire                               o_psum_kn2_vld;
-// output wire                               o_psum_kn3_vld;
 output wire          [ADDR_WIDTH - 1 : 0] memctrl0_wadd;
 output wire                               memctrl0_wren;
 output wire          [DATA_WIDTH - 1 : 0] memctrl0_idat;
@@ -118,43 +100,58 @@ input  wire           [REG_WIDTH - 1 : 0] i_conf_weightinterval;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_outputshape;
 output wire           [REG_WIDTH - 1 : 0] o_conf_status;
 
-output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_valid_knx_cnt;
-output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_psum_line_vld_cnt;
-output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_idata_req_cnt;
-output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_odata_req_cnt;
-output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_line_req_cnt;
-output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_done_cnt;
-output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_kernel_done_cnt;
-
-output wire           [REG_WIDTH - 1 : 0] dbg_psumacc_base_addr;
-output wire           [REG_WIDTH - 1 : 0] dbg_psumacc_psum_out_cnt;
-output wire           [REG_WIDTH - 1 : 0] dbg_psumacc_rd_addr;
-output wire           [REG_WIDTH - 1 : 0] dbg_psumacc_wr_addr;
+input                 [REG_WIDTH - 1 : 0] ps_addr;
+input                                     ps_wren;
+input                 [REG_WIDTH - 1 : 0] ps_wdat;
+input                                     ps_rden;
+output                [REG_WIDTH - 1 : 0] ps_rdat;
+output                                    ps_rvld;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
 wire  [BIT_WIDTH * 2 - 1 : 0] accum_i_psum [NUM_KERNEL - 1 : 0];
 wire     [NUM_KERNEL - 1 : 0] accum_i_psum_vld;
 wire                          accum_i_psum_end;
-// wire [BIT_WIDTH - 1 : 0]                accum_o_psum [NUM_KERNEL - 1 : 0];
-// wire [NUM_KERNEL - 1 : 0]               accum_o_psum_vld;
 
-// wire [(BIT_WIDTH * NUM_KERNEL) - 1 : 0] engine_i_psum;
-// wire                                    engine_i_psum_vld;
+// wire                          rst_soft;
+// wire                          rst_p;
+wire                          i_cnfx_enable;
+wire                          kcpe_done;
+wire                          psum_done;
 
-wire                      rst_soft;
-wire                      rst_p;
-wire                      kcpe_done;
-wire                      psum_done;
+wire   [STRIDE_WIDTH - 1 : 0] i_cnfx_stride;
+wire  [PADDING_WIDTH - 1 : 0] i_cnfx_padding;
 
-assign rst_soft = i_conf_ctrl[1];
-assign rst_p = rst | rst_soft;
+wire      [REG_WIDTH - 1 : 0] linekcpe_valid_knx_cnt;
+wire      [REG_WIDTH - 1 : 0] linekcpe_psum_line_vld_cnt;
+wire      [REG_WIDTH - 1 : 0] linekcpe_idata_req_cnt;
+wire      [REG_WIDTH - 1 : 0] linekcpe_odata_req_cnt;
+wire      [REG_WIDTH - 1 : 0] linekcpe_weight_line_req_cnt;
+wire      [REG_WIDTH - 1 : 0] linekcpe_weight_done_cnt;
+wire      [REG_WIDTH - 1 : 0] linekcpe_kernel_done_cnt;
+wire      [REG_WIDTH - 1 : 0] psumacc_base_addr;
+wire      [REG_WIDTH - 1 : 0] psumacc_psum_out_cnt;
+wire      [REG_WIDTH - 1 : 0] psumacc_wr_addr;
+wire      [REG_WIDTH - 1 : 0] psumacc_rd_addr;
+wire      [REG_WIDTH - 1 : 0] datareq_knlinex_cnt;
+wire      [REG_WIDTH - 1 : 0] datareq_addr_reg;
+
+assign i_cnfx_enable  = i_conf_ctrl[0];
+assign i_cnfx_stride  = i_conf_kernelsize[19:16];
+assign i_cnfx_padding = i_conf_kernelsize[27:24];
+
+wire [7 : 0] valid_input_shape;
+assign valid_input_shape = (i_conf_inputshape[7:0] + i_cnfx_padding - i_conf_kernelshape[3:0]);
+
+// assign rst_soft = i_conf_ctrl[1];
+// assign rst_p = rst | rst_soft;
 
 line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .clk                                (clk),
-    .rst                                (rst_p),
+    .rst                                (rst),
     .o_data_req                         (o_data_req),
     .o_data_end                         (o_data_end),
     .i_data                             (i_data),
@@ -162,8 +159,6 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .o_weight_req                       (o_weight_req),
     .i_weight                           (i_weight),
     .i_weight_vld                       (i_weight_vld),
-    // .i_psum                             (engine_i_psum),
-    // .i_psum_vld                         (engine_i_psum_vld),
     .o_psum_kn0                         (accum_i_psum[0]),
     .o_psum_kn0_vld                     (accum_i_psum_vld[0]),
     .o_psum_kn1                         (accum_i_psum[1]),
@@ -179,6 +174,7 @@ line_kcpe_conv2d_engine line_kcpe_conv2d_engine_0(
     .i_conf_inputrstcnt                 (i_conf_inputrstcnt),
     .i_conf_outputsize                  (i_conf_outputsize),
     .i_conf_kernelsize                  (i_conf_kernelsize),
+    .i_conf_outputshape                 (i_conf_outputshape),
     .o_done                             (kcpe_done),
     .dbg_linekcpe_valid_knx_cnt         (dbg_linekcpe_valid_knx_cnt),
     .dbg_linekcpe_psum_line_vld_cnt     (dbg_linekcpe_psum_line_vld_cnt),
@@ -195,7 +191,7 @@ psum_accum_ctrl
     )
 psum_accum_ctrl_0(
     .clk                        (clk),
-    .rst                        (rst_p),
+    .rst                        (rst),
     .psum_kn0_dat               (accum_i_psum[0]),
     .psum_kn0_vld               (accum_i_psum_vld[0]),
     .psum_kn1_dat               (accum_i_psum[1]),
@@ -215,7 +211,11 @@ psum_accum_ctrl_0(
     .i_conf_ctrl                (i_conf_ctrl),
     .i_conf_weightinterval      (i_conf_weightinterval),
     .i_conf_outputsize          (i_conf_outputsize),
+    .i_conf_inputshape          (i_conf_inputshape),
     .i_conf_kernelshape         (i_conf_kernelshape),
+    .i_conf_outputshape         (i_conf_outputshape),
+    .i_cnfx_stride              (i_cnfx_stride),
+    .i_cnfx_padding             (i_cnfx_padding),
     .o_done                     (psum_done),
     .dbg_psumacc_base_addr      (dbg_psumacc_base_addr),
     .dbg_psumacc_psum_out_cnt   (dbg_psumacc_psum_out_cnt),
@@ -226,6 +226,7 @@ psum_accum_ctrl_0(
 
 // Control logic
 reg [REG_WIDTH - 1 : 0] conf_status;
+reg [REG_WIDTH - 1 : 0] time_cnt;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -237,5 +238,66 @@ always @(posedge clk) begin
 end
 
 assign o_conf_status = conf_status;
+
+// Execution timer
+reg [2 : 0] psum_done_pp;
+wire time_cnt_enb;
+
+always @(posedge clk) begin
+    psum_done_pp[0] <= psum_done;
+    psum_done_pp[1] <= psum_done_pp[0];
+    psum_done_pp[2] <= psum_done_pp[1];
+end
+
+assign time_cnt_enb = i_cnfx_enable & (~psum_done_pp[2]);
+
+always @(posedge clk) begin
+    if (rst) begin
+        time_cnt <= 0;
+    end
+    else if (time_cnt_enb) begin
+        time_cnt <= time_cnt + 1'b1;
+    end
+end
+
+statusx_psif #(
+    .BASE_ADDR          (32'hF0000010),
+    .ADDR_RANGE_WIDTH   (4),
+    .NUM_REGS           (1)
+    )
+status_register(
+    .idat               (time_cnt),
+    .ps_addr            (ps_addr),
+    .ps_rden            (ps_rden),
+    .ps_rdat            (ps_rdat),
+    .ps_rvld            (ps_rvld)
+    );
+
+statusx_psif #(
+    .BASE_ADDR         (32'hF0000000),
+    .ADDR_RANGE_WIDTH  (4),
+    .NUM_REGS          (13)
+    )
+dbg_cnt_register(
+    .idat       ({
+                dbg_linekcpe_valid_knx_cnt,
+                dbg_linekcpe_psum_line_vld_cnt,
+                dbg_linekcpe_idata_req_cnt,
+                dbg_linekcpe_odata_req_cnt,
+                dbg_linekcpe_weight_line_req_cnt,
+                dbg_linekcpe_weight_done_cnt,
+                dbg_linekcpe_kernel_done_cnt,
+                dbg_psumacc_base_addr,
+                dbg_psumacc_psum_out_cnt,
+                dbg_psumacc_wr_addr,
+                dbg_psumacc_rd_addr,
+                dbg_datareq_knlinex_cnt,
+                dbg_datareq_addr_reg
+                }),
+    .ps_addr    (ps_addr),
+    .ps_rden    (ps_rden),
+    .ps_rdat    (dbg_cnt_register_rdat),
+    .ps_rvld    (dbg_cnt_register_rvld)
+    );
 
 endmodule

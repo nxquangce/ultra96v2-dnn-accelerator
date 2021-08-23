@@ -33,8 +33,6 @@ module line_kcpe_conv2d_engine(
     o_weight_req,
     i_weight,
     i_weight_vld,
-    // i_psum,
-    // i_psum_vld,
     o_psum_kn0,
     o_psum_kn0_vld,
     o_psum_kn1,
@@ -50,6 +48,7 @@ module line_kcpe_conv2d_engine(
     i_conf_inputrstcnt,
     i_conf_outputsize,
     i_conf_kernelsize,
+    i_conf_outputshape,
     o_done,
     dbg_linekcpe_valid_knx_cnt,
     dbg_linekcpe_psum_line_vld_cnt,
@@ -58,23 +57,36 @@ module line_kcpe_conv2d_engine(
     dbg_linekcpe_weight_line_req_cnt,
     dbg_linekcpe_weight_done_cnt,
     dbg_linekcpe_kernel_done_cnt,
+    // ps_addr,
+    // ps_wren,
+    // ps_wdat,
+    // ps_rden,
+    // ps_rdat,
+    // ps_rvld,
     );
 
 ////////////////////////////////////////////////////////////////////////////////
 // Parameter declarations
-parameter BIT_WIDTH         = 8;
-parameter NUM_CHANNEL       = 3;
-parameter NUM_KERNEL        = 4;
-parameter NUM_KCPE          = 3;    // Number of kernel-channel PE
-parameter REG_WIDTH         = 32;
+parameter BIT_WIDTH             = 8;
+parameter NUM_CHANNEL           = 3;
+parameter NUM_KERNEL            = 4;
+parameter NUM_KCPE              = 3;    // Number of kernel-channel PE
+parameter REG_WIDTH             = 32;
 
-parameter NUM_RDATA         = NUM_KCPE;
+parameter NUM_RDATA             = NUM_KCPE;
 
-parameter KERNEL_SIZE_WIDTH = 3;
-parameter NUM_KCPE_WIDTH    = 2;
+parameter KERNEL_SIZE_WIDTH     = 4;
+parameter INPUT_SIZE_WIDTH      = 8;
+parameter NUM_KCPE_WIDTH        = 2;
 
-localparam IN_INPUT_DAT_WIDTH  = BIT_WIDTH * NUM_CHANNEL;
-localparam IN_WEIGHT_DAT_WIDTH = BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL;
+localparam IN_INPUT_DAT_WIDTH   = BIT_WIDTH * NUM_CHANNEL;
+localparam IN_WEIGHT_DAT_WIDTH  = BIT_WIDTH * NUM_CHANNEL * NUM_KERNEL;
+
+parameter INPUT_FF_ADDR_WIDTH   = 4;
+
+parameter PADDING_WIDTH         = 4;
+parameter STRIDE_WIDTH          = 4;
+parameter OUTPUT_SHAPE_WIDTH    = 16;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Port declarations
@@ -100,7 +112,6 @@ output wire                               o_psum_kn1_vld;
 output wire                               o_psum_kn2_vld;
 output wire                               o_psum_kn3_vld;
 output wire                               o_psum_end;
-// output wire [REG_WIDTH * NUM_KCPE - 1 : 0]      err_psum_vld;
 
 input  wire           [REG_WIDTH - 1 : 0] i_conf_ctrl;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelshape;
@@ -108,6 +119,7 @@ input  wire           [REG_WIDTH - 1 : 0] i_conf_inputshape;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_inputrstcnt;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_outputsize;
 input  wire           [REG_WIDTH - 1 : 0] i_conf_kernelsize;
+input  wire           [REG_WIDTH - 1 : 0] i_conf_outputshape;
 output wire                               o_done;
 
 // Debug
@@ -118,6 +130,13 @@ output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_odata_req_cnt;
 output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_line_req_cnt;
 output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_weight_done_cnt;
 output wire           [REG_WIDTH - 1 : 0] dbg_linekcpe_kernel_done_cnt;
+
+// input  wire                               ps_wren;
+// input  wire           [REG_WIDTH - 1 : 0] ps_addr;
+// input  wire           [REG_WIDTH - 1 : 0] ps_wdat;
+// input  wire                               ps_rden;
+// output wire           [REG_WIDTH - 1 : 0] ps_rdat;
+// output wire                               ps_rvld;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Local logic and instantiation
@@ -135,7 +154,7 @@ wire                                   buffer_o_data_half;
 wire                                   buffer_o_data_empty;
 
 // Weight signals
-reg                                                 i_weight_req;
+wire                                                i_weight_req;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0]              i_weight_kn0;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0]              i_weight_kn1;
 wire [BIT_WIDTH * NUM_CHANNEL - 1 : 0]              i_weight_kn2;
@@ -178,11 +197,73 @@ end
 
 
 // Activation input buffer
+wire [3:0]                         i_cnfx_stride;
+wire [3:0]                         i_cnfx_numinvalidrow;
+wire [3:0]                         i_cnfx_padding;
+wire [KERNEL_SIZE_WIDTH - 1 : 0]   i_cnfx_kernelwidth;
+wire [INPUT_SIZE_WIDTH - 1 : 0]    i_cnfx_inputwidth;
+wire [7:0]                         outputwidth;
+wire [3:0]                         buffer_i_data_step;
+wire [INPUT_FF_ADDR_WIDTH - 1 : 0] buffer_o_data_counter;
+wire                               buffer_o_data_preempty;
+
+reg [REG_WIDTH - 1 : 0] idata_req_per_row_cnt;
+wire                    idata_req_per_row_cnt_max_vld;
+wire                    idata_req_per_row_cnt_sta_vld;
+
+reg [PADDING_WIDTH - 1 : 0] pad_sta;
+reg [PADDING_WIDTH - 1 : 0] pad_end;
+
+assign i_cnfx_stride        = i_conf_kernelsize[19:16];
+assign i_cnfx_numinvalidrow = i_conf_kernelsize[23:20];
+assign i_cnfx_padding       = i_conf_kernelsize[27:24];
+assign i_cnfx_kernelwidth   = i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0];
+assign i_cnfx_inputwidth    = i_conf_inputshape[INPUT_SIZE_WIDTH - 1 : 0];
+assign outputwidth          = i_conf_outputshape[7:0];
+
+always @(posedge clk) begin
+    pad_sta <= i_cnfx_padding >> 1;
+    pad_end <= i_cnfx_padding - (i_cnfx_padding >> 1);
+end
+
+reg idata_req_per_row_cnt_sta_vld_cache;
+always @(posedge clk) begin
+    if (rst) begin
+        idata_req_per_row_cnt_sta_vld_cache <= 0;
+    end
+    else if (i_data_req) begin
+        idata_req_per_row_cnt_sta_vld_cache <= idata_req_per_row_cnt_sta_vld;
+    end
+end
+
+assign idata_req_per_row_cnt_sta_vld = (idata_req_per_row_cnt == 0) & ~idata_req_per_row_cnt_sta_vld_cache;
+assign idata_req_per_row_cnt_max_vld = idata_req_per_row_cnt == (i_cnfx_inputwidth - i_cnfx_numinvalidrow - 1'b1);
+
+always @(posedge clk) begin
+    if (rst) begin
+        idata_req_per_row_cnt <= 0;
+    end
+    else if (i_data_req) begin
+        idata_req_per_row_cnt <= (idata_req_per_row_cnt_max_vld) ? 0 : idata_req_per_row_cnt + buffer_i_data_step;
+    end
+end
+
+assign buffer_i_data_step = (idata_req_per_row_cnt_sta_vld) ? i_cnfx_stride - pad_sta :
+                            (idata_req_per_row_cnt_max_vld) ? (i_cnfx_numinvalidrow + 1'b1) : i_cnfx_stride;
+
+reg idata_req_per_row_cnt_sta_vld_pp;
+reg idata_req_per_row_cnt_end_vld_pp;
+always @(posedge clk) begin
+    idata_req_per_row_cnt_sta_vld_pp <= idata_req_per_row_cnt_sta_vld;
+    idata_req_per_row_cnt_end_vld_pp <= idata_req_per_row_cnt_max_vld;
+end
+
 input_buffer 
     #(
     .BIT_WIDTH          (BIT_WIDTH),
     .NUM_CHANNEL        (NUM_CHANNEL),
-    .NUM_RDATA          (NUM_RDATA)
+    .NUM_RDATA          (NUM_RDATA),
+    .FF_ADDR_WIDTH      (INPUT_FF_ADDR_WIDTH)
     )
 input_buffer_0(
     .clk                (clk),
@@ -190,18 +271,33 @@ input_buffer_0(
     .i_data             (i_data),
     .i_data_vld         (i_data_vld),
     .i_data_req         (i_data_req),
+    .i_step             (buffer_i_data_step),
     .o_data             (buffer_o_data),
     .o_data_vld         (buffer_o_data_vld),
-    .data_counter       (),
+    .data_counter       (buffer_o_data_counter),
     .o_full             (buffer_o_data_full),
     .o_empty            (buffer_o_data_empty),
     .o_half             (buffer_o_data_half)
     );
 
+assign buffer_o_data_preempty = (buffer_o_data_counter <  i_cnfx_kernelwidth);
+
 // Data in position
-assign engine_i_data_pos0 = buffer_o_data[IN_INPUT_DAT_WIDTH - 1 : 0];
-assign engine_i_data_pos1 = buffer_o_data[IN_INPUT_DAT_WIDTH * 2 - 1 : IN_INPUT_DAT_WIDTH];
-assign engine_i_data_pos2 = buffer_o_data[IN_INPUT_DAT_WIDTH * 3 - 1 : IN_INPUT_DAT_WIDTH * 2];
+wire [IN_INPUT_DAT_WIDTH - 1 : 0] buffer_o_data_pos [NUM_RDATA - 1 : 0];
+assign buffer_o_data_pos[0] = buffer_o_data[IN_INPUT_DAT_WIDTH - 1 : 0];
+assign buffer_o_data_pos[1] = buffer_o_data[IN_INPUT_DAT_WIDTH * 2 - 1 : IN_INPUT_DAT_WIDTH];
+assign buffer_o_data_pos[2] = buffer_o_data[IN_INPUT_DAT_WIDTH * 3 - 1 : IN_INPUT_DAT_WIDTH * 2];
+
+wire sta_with_pad_vld;
+wire end_with_pad_vld;
+
+assign sta_with_pad_vld = idata_req_per_row_cnt_sta_vld_pp & (pad_sta != 0);
+assign end_with_pad_vld = idata_req_per_row_cnt_end_vld_pp & (pad_end != 0);
+
+assign engine_i_data_pos0 = (sta_with_pad_vld) ?                    0 : buffer_o_data_pos[0];
+assign engine_i_data_pos1 = (sta_with_pad_vld) ? buffer_o_data_pos[0] : buffer_o_data_pos[1];
+assign engine_i_data_pos2 = (sta_with_pad_vld) ? buffer_o_data_pos[1] : 
+                            (end_with_pad_vld) ?                    0 : buffer_o_data_pos[2];
 
 // Weight Buffer
 assign i_weight_kn0 = i_weight[BIT_WIDTH * NUM_CHANNEL - 1 : 0];
@@ -355,15 +451,21 @@ result_router result_router_0(
     .o_psum_kn3_vld     (router_kn3_vld)
     );
 
-assign valid_knx_cnt_max_vld = valid_knx_cnt == (i_conf_inputshape[7:0] - 1'b1);
-assign invalid_knx_vld = valid_knx_cnt > (i_conf_inputshape[7:0] - i_conf_kernelshape[3:0]);
+wire [3 : 0] valid_row_by_padding;
+assign valid_row_by_padding = (pad_end == 0) ? 0 : (i_cnfx_stride << (pad_end - 1'b1)); // support pad 0, 1, 2 only
+
+assign valid_knx_cnt_max_vld = valid_knx_cnt == (i_cnfx_inputwidth - i_cnfx_numinvalidrow - 1'b1);
+//(i_cnfx_inputwidth + pad_sta - i_cnfx_numinvalidrow - 1'b1);
+assign invalid_knx_vld = valid_knx_cnt > (i_cnfx_inputwidth + pad_end - i_cnfx_kernelwidth);
+// (outputwidth - 1'b1);
+//(i_cnfx_inputwidth - i_cnfx_kernelwidth + valid_row_by_padding);
 
 always @(posedge clk) begin
     if (rst) begin
         valid_knx_cnt <= 0;
     end
     else if (router_kn0_vld) begin
-        valid_knx_cnt <= (valid_knx_cnt_max_vld) ? 0 : valid_knx_cnt + 1'b1;
+        valid_knx_cnt <= (valid_knx_cnt_max_vld) ? 0 : valid_knx_cnt + i_cnfx_stride;
     end
 end
 
@@ -375,19 +477,6 @@ assign o_psum_kn0_vld = router_kn0_vld & ~invalid_knx_vld;
 assign o_psum_kn1_vld = router_kn1_vld & ~invalid_knx_vld;
 assign o_psum_kn2_vld = router_kn2_vld & ~invalid_knx_vld;
 assign o_psum_kn3_vld = router_kn3_vld & ~invalid_knx_vld;
-
-assign psum_line_vld_cnt_max_vld = (psum_line_vld_cnt == i_conf_outputsize);
-
-always @(posedge clk) begin
-    if (rst) begin
-        psum_line_vld_cnt <= 0;
-    end
-    else if (o_psum_kn0_vld) begin
-        psum_line_vld_cnt <= (psum_line_vld_cnt_max_vld) ? 0 : psum_line_vld_cnt + 1'b1;
-    end
-end
-
-assign o_psum_end = psum_line_vld_cnt_max_vld;
 
 //// Control logic
 reg                     enb;
@@ -402,13 +491,92 @@ wire                    odata_req_cnt_max_vld;
 wire                    odata_req_cnt_premax_vld;
 reg                     done;
 
+reg             [7 : 0] weight_line_done_cnt;
+wire                    weight_line_done_cnt_max_vld;
+reg             [7 : 0] weight_done_cnt;
+wire                    weight_done_cnt_max_vld;
+reg [REG_WIDTH - 1 : 0] kernel_done_cnt;
+wire                    kernel_done_cnt_max_vld;
+wire                    kernel_end;
+
 always @(posedge clk) begin
     enb <= i_conf_ctrl[0];
     neg_enb <= i_conf_ctrl[3];
     con_enb <= i_conf_ctrl[4];
 end
 
-// Data control
+// Psum control
+reg [3 : 0]             sub_line_psum_vld_num;
+reg [REG_WIDTH - 1 : 0] sub_psum_vld_num;
+reg [REG_WIDTH - 1 : 0] psum_line_vld_cnt_max;
+reg [3 : 0]             psum_weight_row_cnt;
+reg                     psum_init;
+
+always @(posedge clk) begin
+    if (rst) begin
+        psum_init <= 1'b1;
+    end
+    else if (o_psum_kn0_vld) begin
+        psum_init <= 1'b0;
+    end
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        psum_weight_row_cnt <= 0;
+    end
+    else if (psum_line_vld_cnt_max_vld & o_psum_kn0_vld) begin
+        psum_weight_row_cnt <= (psum_weight_row_cnt == (i_cnfx_kernelwidth - 1'b1)) ? 0 : psum_weight_row_cnt + 1'b1;
+    end
+end
+
+reg [3 : 0] psum_padend_cnd_num;
+reg [REG_WIDTH - 1 : 0] outputwidthx2;
+reg [REG_WIDTH - 1 : 0] outputwidthx3;
+
+// fox timing
+always @(posedge clk) begin
+    outputwidthx2 <= outputwidth << 1;
+    outputwidthx3 <= (outputwidth << 1) + outputwidth;
+end
+
+// fix timing
+always @(posedge clk) begin
+    psum_padend_cnd_num   <= i_cnfx_kernelwidth - psum_weight_row_cnt - 1'b1;
+    sub_line_psum_vld_num <= (psum_weight_row_cnt < pad_sta) ? pad_sta - psum_weight_row_cnt :
+                             (psum_padend_cnd_num < pad_end) ? pad_end - psum_padend_cnd_num : 0;
+end
+
+// fix timing
+always @(posedge clk) begin
+    sub_psum_vld_num <= (sub_line_psum_vld_num == 4'd1) ? outputwidth :
+                        (sub_line_psum_vld_num == 4'd2) ? outputwidthx2 :
+                        (sub_line_psum_vld_num == 4'd3) ? outputwidthx3 : 0;
+end
+
+always @(posedge clk) begin
+    if (rst) begin
+        psum_line_vld_cnt_max <= 0;
+    end
+    if (o_psum_kn0_vld) begin
+        psum_line_vld_cnt_max <= i_conf_outputsize - sub_psum_vld_num;
+    end
+end
+
+assign psum_line_vld_cnt_max_vld = (psum_line_vld_cnt == psum_line_vld_cnt_max) & ~psum_init;
+
+always @(posedge clk) begin
+    if (rst) begin
+        psum_line_vld_cnt <= 0;
+    end
+    else if (o_psum_kn0_vld) begin
+        psum_line_vld_cnt <= (psum_line_vld_cnt_max_vld) ? 0 : psum_line_vld_cnt + 1'b1;
+    end
+end
+
+assign o_psum_end = psum_line_vld_cnt_max_vld & o_psum_kn0_vld;
+
+// Out data req control
 always @(posedge clk) begin
     if (rst | done) begin
         odata_req_reg <= 0;
@@ -418,8 +586,29 @@ always @(posedge clk) begin
     end
 end
 
-assign odata_req_cnt_max_vld = (odata_req_cnt == i_conf_inputrstcnt);
-assign odata_req_cnt_premax_vld = (odata_req_cnt == (i_conf_inputrstcnt - i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0]));
+reg [REG_WIDTH - 1 : 0] add_data_req_num;
+reg [REG_WIDTH - 1 : 0] data_req_max;
+
+// fix timing
+always @(posedge clk) begin
+    if (rst) begin
+        add_data_req_num <= 0;
+    end
+    else begin
+        add_data_req_num <= (i_cnfx_padding == 0) ? 0 :
+                            ((weight_line_done_cnt <= pad_sta) |
+                            ((i_cnfx_kernelwidth - weight_line_done_cnt) < pad_end)) ? 
+                            0 : i_cnfx_inputwidth;
+    end
+end
+
+// fix timing
+always @(posedge clk) begin
+    data_req_max <= i_conf_inputrstcnt + add_data_req_num;
+end
+
+assign odata_req_cnt_max_vld = (odata_req_cnt == data_req_max);
+assign odata_req_cnt_premax_vld = (odata_req_cnt == (data_req_max - i_cnfx_kernelwidth));
 
 always @(posedge clk) begin
     if (rst) begin
@@ -442,8 +631,12 @@ always @(posedge clk) begin
     end
 end
 
+// In data req control
+wire idata_end_req_vld;
+assign idata_end_req_vld = idata_end & ~buffer_o_data_preempty;
+
 always @(posedge clk) begin
-    if (rst | idata_end | done) begin
+    if (rst | idata_end_req_vld | done) begin
         idata_req_reg <= 1'b0;
     end
     else if (i_weight_req | con_enb_vld_pp) begin
@@ -451,7 +644,18 @@ always @(posedge clk) begin
     end
 end
 
-assign idata_req_cnt_max_vld = (idata_req_cnt == i_conf_inputrstcnt);
+// fix timing
+reg [REG_WIDTH - 1 : 0] idata_req_cnt_max;
+always @(posedge clk) begin
+    if (rst) begin
+        idata_req_cnt_max <= 0;
+    end
+    else begin
+        idata_req_cnt_max <= i_conf_inputrstcnt + add_data_req_num - i_cnfx_numinvalidrow;
+    end
+end
+
+assign idata_req_cnt_max_vld = (idata_req_cnt == idata_req_cnt_max);
 assign idata_end = idata_req_cnt_max_vld;
 
 always @(posedge clk) begin
@@ -459,68 +663,68 @@ always @(posedge clk) begin
         idata_req_cnt <= 0;
     end
     else if (i_data_req) begin
-        idata_req_cnt <= (idata_req_cnt_max_vld) ? 0 : idata_req_cnt + 1'b1;
+        idata_req_cnt <= (idata_req_cnt_max_vld) ? 0 : idata_req_cnt + buffer_i_data_step;
     end
 end
 
-assign i_data_req = (init & buffer_o_data_full) | idata_req_reg;
+assign i_data_req = (init & buffer_o_data_full) | (idata_req_reg & ~buffer_o_data_preempty);
 
 // Weight control
 reg                             weight_init;
-reg                             weight_line_req_reg;
-reg [KERNEL_SIZE_WIDTH - 1 : 0] weight_line_req_cnt;
-wire                            weight_line_req_cnt_max_vld;
+reg                             oweight_req_per_row_reg;
+reg [KERNEL_SIZE_WIDTH - 1 : 0] oweight_req_per_row_cnt;
+wire                            oweight_req_per_row_cnt_max_vld;
 
 always @(posedge clk) begin
     if (rst) begin
         weight_init <= 1'b0;
     end
-    else if (weight_line_req_cnt_max_vld) begin
+    else if (oweight_req_per_row_cnt_max_vld) begin
         weight_init <= 1'b1;
     end
 end
 
-assign weight_line_req_cnt_max_vld = weight_line_req_cnt == (i_conf_kernelshape[KERNEL_SIZE_WIDTH - 1 : 0] - 1'b1);
+assign oweight_req_per_row_cnt_max_vld = oweight_req_per_row_cnt == (i_cnfx_kernelwidth - 1'b1);
 
 always @(posedge clk) begin
     if (rst) begin
-        weight_line_req_cnt <= 0;
+        oweight_req_per_row_cnt <= 0;
     end
-    else if (weight_line_req_reg) begin
-        weight_line_req_cnt <= (weight_line_req_cnt_max_vld) ? 0 : weight_line_req_cnt + 1'b1;
+    else if (oweight_req_per_row_reg) begin
+        oweight_req_per_row_cnt <= (oweight_req_per_row_cnt_max_vld) ? 0 : oweight_req_per_row_cnt + 1'b1;
     end
 end
 
 always @(posedge clk) begin
-    if (rst | weight_line_req_cnt_max_vld) begin
-        weight_line_req_reg <= 1'b0;
+    if (rst | oweight_req_per_row_cnt_max_vld) begin
+        oweight_req_per_row_reg <= 1'b0;
     end
     else if (enb & (!weight_init | odata_req_cnt_premax_vld)) begin
-        weight_line_req_reg <= 1'b1;
+        oweight_req_per_row_reg <= 1'b1;
     end
 end
 
-assign o_weight_req = weight_line_req_reg & ~done;
+assign o_weight_req = oweight_req_per_row_reg & ~done;
+
+reg idata_end_req_vld_pp;
+always @(posedge clk) begin
+    idata_end_req_vld_pp <= idata_end_req_vld;
+end
+
+assign i_weight_req = (init) ? buffer_o_weight_full : idata_end_req_vld_pp & buffer_o_weight_full;
+
+assign weight_line_done_cnt_max_vld = weight_line_done_cnt == i_cnfx_kernelwidth;
 
 always @(posedge clk) begin
     if (rst) begin
-        i_weight_req <= 0;
+        weight_line_done_cnt <= 0;
     end
-    if (init) begin
-        i_weight_req <= buffer_o_weight_full;
-    end
-    else begin
-        i_weight_req <= idata_end & buffer_o_weight_full;
+    else if (i_weight_req) begin
+        weight_line_done_cnt <= (weight_line_done_cnt_max_vld) ? 1'b1 : weight_line_done_cnt + 1'b1;
     end
 end
 
 // Done control
-reg                         [7 : 0] weight_done_cnt;
-wire                                weight_done_cnt_max_vld;
-reg             [REG_WIDTH - 1 : 0] kernel_done_cnt;
-wire                                kernel_done_cnt_max_vld;
-wire                                kernel_end;
-
 assign weight_done_cnt_max_vld = (weight_done_cnt == i_conf_kernelsize[7 : 0]);
 
 always @(posedge clk) begin
@@ -534,7 +738,7 @@ end
 
 
 assign kernel_done_cnt_max_vld = (kernel_done_cnt == (i_conf_kernelshape[31 : 16] - 3'd4));
-assign kernel_end = weight_done_cnt_max_vld & idata_end;
+assign kernel_end = weight_done_cnt_max_vld & idata_end_req_vld;
 
 always @(posedge clk) begin
     if (rst | init) begin
@@ -562,7 +766,7 @@ assign dbg_linekcpe_valid_knx_cnt = {24'b0, valid_knx_cnt};
 assign dbg_linekcpe_psum_line_vld_cnt = psum_line_vld_cnt;
 assign dbg_linekcpe_idata_req_cnt = idata_req_cnt;
 assign dbg_linekcpe_odata_req_cnt = odata_req_cnt;
-assign dbg_linekcpe_weight_line_req_cnt = {29'b0, weight_line_req_cnt};
+assign dbg_linekcpe_weight_line_req_cnt = {29'b0, oweight_req_per_row_cnt};
 assign dbg_linekcpe_weight_done_cnt = {24'b0, weight_done_cnt};
 assign dbg_linekcpe_kernel_done_cnt = kernel_done_cnt;
 
